@@ -11,28 +11,32 @@
     .status-item { margin: 10px 0; font-size: 16px; }
     .label { color: #aaa; font-size: 14px; }
     
-    /* 箇条書きリストのデザイン */
+    /* タブ切り替えボタン */
+    .tab-container { display: flex; margin-bottom: 15px; border-bottom: 2px solid #444; }
+    .tab-btn { flex: 1; background: none; border: none; padding: 10px; color: #aaa; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; }
+    .tab-btn.active { color: #4a90e2; border-bottom: 2px solid #4a90e2; margin-bottom: -2px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* リストのデザイン */
     .memo-list { list-style: none; padding: 0; margin: 0; }
     .memo-item { background-color: #1e1e1e; padding: 10px 12px; margin-bottom: 8px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; font-size: 14px; word-break: break-all; }
     .memo-text { flex-grow: 1; margin-right: 10px; }
-    .btn-delete-item { background-color: #e74c3c; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+    .btn-action { background-color: #e74c3c; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+    .btn-restore { background-color: #27ae60; }
     
-    /* 入力フォームのデザイン */
+    /* 入力フォーム */
     .input-group { display: flex; gap: 8px; margin-top: 15px; }
     .input-box { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #444; background-color: #1e1e1e; color: white; font-size: 14px; }
     .btn-add { background-color: #2ecc71; color: white; border: none; border-radius: 5px; padding: 10px 15px; font-weight: bold; cursor: pointer; white-space: nowrap; }
     
-    .btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; }
-    .btn-danger { background-color: #c0392b; }
-    .btn-success { background-color: #27ae60; }
-    .btn-close { background-color: #7f8c8d; }
+    .btn-close { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; background-color: #7f8c8d; }
     #loading { text-align: center; color: #aaa; margin-top: 50px; }
     #error-box { display: none; background-color: #e74c3c; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; }
     #content { display: none; }
   </style>
 </head>
 <body>
-  <!-- ⚠️ IDとURLはさっきのものをそのまま入れます！ -->
   <script>
     const MY_LIFF_ID = "2011085090-Y3VoNpnw";
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwloEObQeewdmGNxr-BVujiQWGMSVmiJ75hzqEnz5AfUaAj3L_EY9Kc-UuagOHwtIBX/exec";
@@ -50,27 +54,37 @@
     </div>
 
     <div class="card">
-      <h2>📝 共有している記憶（メモ管理）</h2>
-      <!-- 箇条書きでリスト表示する場所 -->
-      <ul class="memo-list" id="memoListContainer"></ul>
-
-      <!-- 新規メモ追加フォーム -->
-      <div class="input-group">
-        <input type="text" id="newMemoInput" class="input-box" placeholder="新しい記憶を追加...">
-        <button class="btn-add" onclick="addMemo()">追加</button>
+      <h2>📝 記憶メモ管理</h2>
+      
+      <!-- タブ切り替えボタン -->
+      <div class="tab-container">
+        <button class="tab-btn active" onclick="switchTab('active')">現在の記憶 (<span id="activeCount">0</span>)</button>
+        <button class="tab-btn" onclick="switchTab('trash')">最近消したメモ (<span id="trashCount">0</span>)</button>
       </div>
 
-      <button class="btn btn-danger" style="margin-top: 15px;" onclick="callApi('clearAll')">🗑️ 全メモを初期化する</button>
-      <button class="btn btn-success" onclick="callApi('restore')">✨ 直前のバックアップを復元</button>
+      <!-- タブ1：現在の記憶 -->
+      <div id="tab-active" class="tab-content active">
+        <ul class="memo-list" id="memoListContainer"></ul>
+        <div class="input-group">
+          <input type="text" id="newMemoInput" class="input-box" placeholder="新しい記憶を追加...">
+          <button class="btn-add" onclick="addMemo()">追加</button>
+        </div>
+      </div>
+
+      <!-- タブ2：直近消したメモ5件（ゴミ箱） -->
+      <div id="tab-trash" class="tab-content">
+        <ul class="memo-list" id="trashListContainer"></ul>
+      </div>
     </div>
 
-    <button class="btn btn-close" onclick="liff.closeWindow()">✖️ 画面を閉じる</button>
+    <button class="btn-close" onclick="liff.closeWindow()">✖️ 画面を閉じる</button>
   </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     let myUserId = "";
     let currentMemos = [];
+    let trashMemos = [];
 
     function showError(message) {
       document.getElementById("loading").style.display = "none";
@@ -92,16 +106,27 @@
       }).catch(err => showError("LIFF初期化エラー: " + err.message));
     });
 
-    // データの読み込み・操作
-    function fetchData(action, extraParam = "") {
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      if (tabName === 'active') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('tab-active').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('tab-trash').classList.add('active');
+      }
+    }
+
+    function fetchData(action, extraParam = "", trashParam = "") {
       document.getElementById("content").style.display = "none";
       document.getElementById("loading").style.display = "block";
       document.getElementById("loading").innerHTML = "📡 通信中...";
 
       let url = GAS_API_URL + "?userId=" + myUserId + "&action=" + action;
-      if (extraParam !== "") {
-        url += "&param=" + encodeURIComponent(extraParam);
-      }
+      if (extraParam !== "") url += "&param=" + encodeURIComponent(extraParam);
+      if (trashParam !== "") url += "&trash=" + encodeURIComponent(trashParam);
 
       fetch(url)
         .then(response => response.json())
@@ -115,7 +140,7 @@
           document.getElementById("stageName").textContent = data.stage;
           document.getElementById("mood").textContent = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
 
-          renderMemoList(data.memo);
+          renderLists(data.memo, data.trash);
 
           document.getElementById("loading").style.display = "none";
           document.getElementById("content").style.display = "block";
@@ -123,39 +148,71 @@
         .catch(err => showError("GAS通信エラー: " + err.message));
     }
 
-    function renderMemoList(memoString) {
+    function renderLists(memoString, trashString) {
+      // 1. 現在の記憶の処理
       const container = document.getElementById("memoListContainer");
       container.innerHTML = "";
 
       if (!memoString || memoString === "まだ特別な記憶はありません。") {
         currentMemos = [];
         container.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">まだ特別な記憶はありません。</li>';
-        return;
+      } else {
+        currentMemos = memoString.split('\n').map(m => m.replace(/^[・\-\*]\s*/, '').trim()).filter(m => m !== "");
+        currentMemos.forEach((memo, index) => {
+          const li = document.createElement("li");
+          li.className = "memo-item";
+          li.innerHTML = `
+            <span class="memo-text">・${memo}</span>
+            <button class="btn-action" onclick="deleteMemo(${index})">削除</button>
+          `;
+          container.appendChild(li);
+        });
       }
+      document.getElementById("activeCount").textContent = currentMemos.length;
 
-      currentMemos = memoString.split('\n').map(m => m.replace(/^[・\-\*]\s*/, '').trim()).filter(m => m !== "");
+      // 2. ゴミ箱（直近消した5件）の処理
+      const trashContainer = document.getElementById("trashListContainer");
+      trashContainer.innerHTML = "";
 
-      if (currentMemos.length === 0) {
-        container.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">まだ特別な記憶はありません。</li>';
-        return;
+      trashMemos = trashString ? trashString.split('\n').filter(m => m.trim() !== "") : [];
+
+      if (trashMemos.length === 0) {
+        trashContainer.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">削除した記憶はありません。</li>';
+      } else {
+        trashMemos.forEach((memo, index) => {
+          const li = document.createElement("li");
+          li.className = "memo-item";
+          li.innerHTML = `
+            <span class="memo-text" style="color:#aaa;">・${memo}</span>
+            <button class="btn-action btn-restore" onclick="restoreMemo(${index})">復元</button>
+          `;
+          trashContainer.appendChild(li);
+        });
       }
-
-      currentMemos.forEach((memo, index) => {
-        const li = document.createElement("li");
-        li.className = "memo-item";
-        li.innerHTML = `
-          <span class="memo-text">・${memo}</span>
-          <button class="btn-delete-item" onclick="deleteMemoIndex(${index})">削除</button>
-        `;
-        container.appendChild(li);
-      });
+      document.getElementById("trashCount").textContent = trashMemos.length;
     }
 
-    function deleteMemoIndex(index) {
-      if (!confirm("この記憶を削除しますか？")) return;
-      currentMemos.splice(index, 1);
-      const newMemoString = currentMemos.length > 0 ? currentMemos.map(m => "・" + m).join('\n') : "まだ特別な記憶はありません。";
-      fetchData('updateMemo', newMemoString);
+    function deleteMemo(index) {
+      const deleted = currentMemos.splice(index, 1)[0];
+      trashMemos.unshift(deleted); // ゴミ箱の先頭に追加
+      if (trashMemos.length > 5) trashMemos.pop(); // 最大5件まで
+
+      const newMemoStr = currentMemos.length > 0 ? currentMemos.map(m => "・" + m).join('\n') : "まだ特別な記憶はありません。";
+      const newTrashStr = trashMemos.join('\n');
+      fetchData('updateState', newMemoStr, newTrashStr);
+    }
+
+    function restoreMemo(index) {
+      const restored = trashMemos.splice(index, 1)[0];
+      if (currentMemos.length === 0 || currentMemos[0] === "まだ特別な記憶はありません。") {
+        currentMemos = [restored];
+      } else {
+        currentMemos.push(restored);
+      }
+
+      const newMemoStr = currentMemos.map(m => "・" + m).join('\n');
+      const newTrashStr = trashMemos.join('\n');
+      fetchData('updateState', newMemoStr, newTrashStr);
     }
 
     function addMemo() {
@@ -169,14 +226,10 @@
         currentMemos.push(val);
       }
 
-      const newMemoString = currentMemos.map(m => "・" + m).join('\n');
+      const newMemoStr = currentMemos.map(m => "・" + m).join('\n');
+      const newTrashStr = trashMemos.join('\n');
       input.value = "";
-      fetchData('updateMemo', newMemoString);
-    }
-
-    function callApi(action) {
-      if (action === 'clearAll' && !confirm("本当にすべてのメモを初期化しますか？")) return;
-      fetchData(action);
+      fetchData('updateState', newMemoStr, newTrashStr);
     }
   </script>
 </body>
