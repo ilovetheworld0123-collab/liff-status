@@ -18,19 +18,16 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* リストのデザイン */
+    /* 直接編集できるテキストエリア */
+    .memo-textarea { width: 100%; height: 180px; padding: 12px; border-radius: 5px; border: 1px solid #444; background-color: #1e1e1e; color: #dcdcdc; font-size: 14px; box-sizing: border-box; resize: vertical; line-height: 1.5; }
+    
+    /* 変更・削除履歴リスト */
     .memo-list { list-style: none; padding: 0; margin: 0; }
-    .memo-item { background-color: #1e1e1e; padding: 10px 12px; margin-bottom: 8px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; font-size: 14px; word-break: break-all; }
-    .memo-text { flex-grow: 1; margin-right: 10px; }
-    .btn-action { background-color: #e74c3c; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; }
-    .btn-restore { background-color: #27ae60; }
-    
-    /* 入力フォーム */
-    .input-group { display: flex; gap: 8px; margin-top: 15px; }
-    .input-box { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #444; background-color: #1e1e1e; color: white; font-size: 14px; }
-    .btn-add { background-color: #2ecc71; color: white; border: none; border-radius: 5px; padding: 10px 15px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-    
-    .btn-close { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; background-color: #7f8c8d; }
+    .memo-item { background-color: #1e1e1e; padding: 10px 12px; margin-bottom: 8px; border-radius: 5px; border: 1px solid #444; font-size: 13px; color: #aaa; word-break: break-all; white-space: pre-wrap; }
+
+    .btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; }
+    .btn-save { background-color: #27ae60; margin-top: 15px; }
+    .btn-close { background-color: #7f8c8d; }
     #loading { text-align: center; color: #aaa; margin-top: 50px; }
     #error-box { display: none; background-color: #e74c3c; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; }
     #content { display: none; }
@@ -54,37 +51,32 @@
     </div>
 
     <div class="card">
-      <h2>📝 記憶メモ管理</h2>
+      <h2>📝 記憶メモ直接編集</h2>
       
       <!-- タブ切り替えボタン -->
       <div class="tab-container">
-        <button class="tab-btn active" onclick="switchTab('active')">現在の記憶 (<span id="activeCount">0</span>)</button>
-        <button class="tab-btn" onclick="switchTab('trash')">最近消したメモ (<span id="trashCount">0</span>)</button>
+        <button class="tab-btn active" onclick="switchTab('active')">メモ編集</button>
+        <button class="tab-btn" onclick="switchTab('history')">変更履歴 (<span id="historyCount">0</span>)</button>
       </div>
 
-      <!-- タブ1：現在の記憶 -->
+      <!-- タブ1：直接編集テキストエリア -->
       <div id="tab-active" class="tab-content active">
-        <ul class="memo-list" id="memoListContainer"></ul>
-        <div class="input-group">
-          <input type="text" id="newMemoInput" class="input-box" placeholder="新しい記憶を追加...">
-          <button class="btn-add" onclick="addMemo()">追加</button>
-        </div>
+        <textarea id="memoTextarea" class="memo-textarea" placeholder="ここに記憶メモが表示されます..."></textarea>
+        <button class="btn btn-save" onclick="saveMemo()">💾 変更を保存する</button>
       </div>
 
-      <!-- タブ2：直近消したメモ5件（ゴミ箱） -->
-      <div id="tab-trash" class="tab-content">
-        <ul class="memo-list" id="trashListContainer"></ul>
+      <!-- タブ2：変更したメモの履歴（直近5件） -->
+      <div id="tab-history" class="tab-content">
+        <ul class="memo-list" id="historyListContainer"></ul>
       </div>
     </div>
 
-    <button class="btn-close" onclick="liff.closeWindow()">✖️ 画面を閉じる</button>
+    <button class="btn btn-close" onclick="liff.closeWindow()">✖️ 画面を閉じる</button>
   </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     let myUserId = "";
-    let currentMemos = [];
-    let trashMemos = [];
 
     function showError(message) {
       document.getElementById("loading").style.display = "none";
@@ -115,18 +107,19 @@
         document.getElementById('tab-active').classList.add('active');
       } else {
         document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('tab-trash').classList.add('active');
+        document.getElementById('tab-history').classList.add('active');
       }
     }
 
-    function fetchData(action, extraParam = "", trashParam = "") {
+    function fetchData(action, newMemoParam = "") {
       document.getElementById("content").style.display = "none";
       document.getElementById("loading").style.display = "block";
       document.getElementById("loading").innerHTML = "📡 通信中...";
 
       let url = GAS_API_URL + "?userId=" + myUserId + "&action=" + action;
-      if (extraParam !== "") url += "&param=" + encodeURIComponent(extraParam);
-      if (trashParam !== "") url += "&trash=" + encodeURIComponent(trashParam);
+      if (newMemoParam !== "") {
+        url += "&param=" + encodeURIComponent(newMemoParam);
+      }
 
       fetch(url)
         .then(response => response.json())
@@ -140,7 +133,11 @@
           document.getElementById("stageName").textContent = data.stage;
           document.getElementById("mood").textContent = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
 
-          renderLists(data.memo, data.trash);
+          // テキストエリアに流し込む
+          document.getElementById("memoTextarea").value = data.memo || "";
+
+          // 履歴リストの描画
+          renderHistory(data.history);
 
           document.getElementById("loading").style.display = "none";
           document.getElementById("content").style.display = "block";
@@ -148,88 +145,29 @@
         .catch(err => showError("GAS通信エラー: " + err.message));
     }
 
-    function renderLists(memoString, trashString) {
-      // 1. 現在の記憶の処理
-      const container = document.getElementById("memoListContainer");
+    function renderHistory(historyString) {
+      const container = document.getElementById("historyListContainer");
       container.innerHTML = "";
 
-      if (!memoString || memoString === "まだ特別な記憶はありません。") {
-        currentMemos = [];
-        container.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">まだ特別な記憶はありません。</li>';
+      const historyArray = historyString ? historyString.split('---SPLIT---').filter(h => h.trim() !== "") : [];
+
+      if (historyArray.length === 0) {
+        container.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">変更履歴はありません。</li>';
       } else {
-        currentMemos = memoString.split('\n').map(m => m.replace(/^[・\-\*]\s*/, '').trim()).filter(m => m !== "");
-        currentMemos.forEach((memo, index) => {
+        historyArray.forEach((hist) => {
           const li = document.createElement("li");
           li.className = "memo-item";
-          li.innerHTML = `
-            <span class="memo-text">・${memo}</span>
-            <button class="btn-action" onclick="deleteMemo(${index})">削除</button>
-          `;
+          li.textContent = hist;
           container.appendChild(li);
         });
       }
-      document.getElementById("activeCount").textContent = currentMemos.length;
-
-      // 2. ゴミ箱（直近消した5件）の処理
-      const trashContainer = document.getElementById("trashListContainer");
-      trashContainer.innerHTML = "";
-
-      trashMemos = trashString ? trashString.split('\n').filter(m => m.trim() !== "") : [];
-
-      if (trashMemos.length === 0) {
-        trashContainer.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">削除した記憶はありません。</li>';
-      } else {
-        trashMemos.forEach((memo, index) => {
-          const li = document.createElement("li");
-          li.className = "memo-item";
-          li.innerHTML = `
-            <span class="memo-text" style="color:#aaa;">・${memo}</span>
-            <button class="btn-action btn-restore" onclick="restoreMemo(${index})">復元</button>
-          `;
-          trashContainer.appendChild(li);
-        });
-      }
-      document.getElementById("trashCount").textContent = trashMemos.length;
+      document.getElementById("historyCount").textContent = historyArray.length;
     }
 
-    function deleteMemo(index) {
-      const deleted = currentMemos.splice(index, 1)[0];
-      trashMemos.unshift(deleted); // ゴミ箱の先頭に追加
-      if (trashMemos.length > 5) trashMemos.pop(); // 最大5件まで
-
-      const newMemoStr = currentMemos.length > 0 ? currentMemos.map(m => "・" + m).join('\n') : "まだ特別な記憶はありません。";
-      const newTrashStr = trashMemos.join('\n');
-      fetchData('updateState', newMemoStr, newTrashStr);
-    }
-
-    function restoreMemo(index) {
-      const restored = trashMemos.splice(index, 1)[0];
-      if (currentMemos.length === 0 || currentMemos[0] === "まだ特別な記憶はありません。") {
-        currentMemos = [restored];
-      } else {
-        currentMemos.push(restored);
-      }
-
-      const newMemoStr = currentMemos.map(m => "・" + m).join('\n');
-      const newTrashStr = trashMemos.join('\n');
-      fetchData('updateState', newMemoStr, newTrashStr);
-    }
-
-    function addMemo() {
-      const input = document.getElementById("newMemoInput");
-      const val = input.value.trim();
-      if (!val) return;
-
-      if (currentMemos.length === 0 || currentMemos[0] === "まだ特別な記憶はありません。") {
-        currentMemos = [val];
-      } else {
-        currentMemos.push(val);
-      }
-
-      const newMemoStr = currentMemos.map(m => "・" + m).join('\n');
-      const newTrashStr = trashMemos.join('\n');
-      input.value = "";
-      fetchData('updateState', newMemoStr, newTrashStr);
+    function saveMemo() {
+      const updatedMemo = document.getElementById("memoTextarea").value.trim();
+      if (!confirm("この内容でメモを保存しますか？")) return;
+      fetchData('updateMemo', updatedMemo);
     }
   </script>
 </body>
