@@ -5,15 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ステータス＆メモ管理</title>
   <style>
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a1a; color: #f0f0f0; padding: 20px; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a1a; color: #f0f0f0; padding: 20px; box-sizing: border-box; }
     .card { background-color: #2c2c2c; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 5px solid #4a90e2; }
     h2 { margin-top: 0; color: #4a90e2; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 10px; }
     .status-item { margin: 10px 0; font-size: 16px; }
     .label { color: #aaa; font-size: 14px; }
-    .memo-box { background-color: #1e1e1e; padding: 15px; border-radius: 5px; font-size: 14px; white-space: pre-wrap; color: #dcdcdc; border: 1px solid #444; }
+    
+    /* 箇条書きリストのデザイン */
+    .memo-list { list-style: none; padding: 0; margin: 0; }
+    .memo-item { background-color: #1e1e1e; padding: 10px 12px; margin-bottom: 8px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; font-size: 14px; word-break: break-all; }
+    .memo-text { flex-grow: 1; margin-right: 10px; }
+    .btn-delete-item { background-color: #e74c3c; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+    
+    /* 入力フォームのデザイン */
+    .input-group { display: flex; gap: 8px; margin-top: 15px; }
+    .input-box { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #444; background-color: #1e1e1e; color: white; font-size: 14px; }
+    .btn-add { background-color: #2ecc71; color: white; border: none; border-radius: 5px; padding: 10px 15px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+    
     .btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; }
-    .btn-danger { background-color: #e74c3c; }
-    .btn-success { background-color: #2ecc71; }
+    .btn-danger { background-color: #c0392b; }
+    .btn-success { background-color: #27ae60; }
     .btn-close { background-color: #7f8c8d; }
     #loading { text-align: center; color: #aaa; margin-top: 50px; }
     #error-box { display: none; background-color: #e74c3c; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; }
@@ -21,7 +32,7 @@
   </style>
 </head>
 <body>
-  <!-- ⚠️ ここに2つのIDとURLを入れます！ ⚠️ -->
+  <!-- ⚠️ ここにご自身のLIFF IDとGASのURLを入れてください！ -->
   <script>
     const MY_LIFF_ID = "2011085090-Y3VoNpnw";
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwloEObQeewdmGNxr-BVujiQWGMSVmiJ75hzqEnz5AfUaAj3L_EY9Kc-UuagOHwtIBX/exec";
@@ -37,18 +48,29 @@
       <div class="status-item"><span class="label">現在の関係:</span> <strong id="stageName"></strong></div>
       <div class="status-item"><span class="label">ラファウの機嫌:</span> <strong id="mood"></strong></div>
     </div>
+
     <div class="card">
-      <h2>📝 共有している記憶（メモ）</h2>
-      <div class="memo-box" id="memoText"></div>
-      <button class="btn btn-danger" onclick="callApi('delete')">🗑️ メモを初期化する</button>
-      <button class="btn btn-success" onclick="callApi('restore')">✨ 直前のメモを復元</button>
+      <h2>📝 共有している記憶（メモ管理）</h2>
+      <!-- 箇条書きでリスト表示する場所 -->
+      <ul class="memo-list" id="memoListContainer"></ul>
+
+      <!-- 新規メモ追加フォーム -->
+      <div class="input-group">
+        <input type="text" id="newMemoInput" class="input-box" placeholder="新しい記憶を追加...">
+        <button class="btn-add" onclick="addMemo()">追加</button>
+      </div>
+
+      <button class="btn btn-danger" style="margin-top: 15px;" onclick="callApi('clearAll')">🗑️ 全メモを初期化する</button>
+      <button class="btn btn-success" onclick="callApi('restore')">✨ 直前のバックアップを復元</button>
     </div>
+
     <button class="btn btn-close" onclick="liff.closeWindow()">✖️ 画面を閉じる</button>
   </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     let myUserId = "";
+    let currentMemos = [];
 
     function showError(message) {
       document.getElementById("loading").style.display = "none";
@@ -64,39 +86,104 @@
         } else {
           liff.getProfile().then(profile => {
             myUserId = profile.userId;
-            callApi('load'); // プロフィール取得後にGASからデータ取得
+            fetchData('load');
           }).catch(err => showError("プロフィール取得エラー: " + err.message));
         }
       }).catch(err => showError("LIFF初期化エラー: " + err.message));
     });
 
-    // 🌟 GAS（外部サーバー）と通信してデータを取得する機能
-    function callApi(action) {
-      if (action === 'delete' && !confirm("本当にメモを初期化しますか？")) return;
-      
+    // データの読み込み・操作
+    function fetchData(action, extraParam = "") {
       document.getElementById("content").style.display = "none";
       document.getElementById("loading").style.display = "block";
       document.getElementById("loading").innerHTML = "📡 通信中...";
 
-      // GASのURLに userId と action をくっつけて通信（GETリクエスト）
-      fetch(GAS_API_URL + "?userId=" + myUserId + "&action=" + action)
+      let url = GAS_API_URL + "?userId=" + myUserId + "&action=" + action;
+      if (extraParam !== "") {
+        url += "&param=" + encodeURIComponent(extraParam);
+      }
+
+      fetch(url)
         .then(response => response.json())
         .then(data => {
           if (data.error) {
             showError(data.error);
             return;
           }
-          // 画面にデータを流し込む
+          // ステータス反映
           document.getElementById("userName").textContent = data.name;
           document.getElementById("trustScore").textContent = data.trust;
           document.getElementById("stageName").textContent = data.stage;
           document.getElementById("mood").textContent = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
-          document.getElementById("memoText").textContent = data.memo;
-          
+
+          // メモを箇条書きに分解して画面に描画
+          renderMemoList(data.memo);
+
           document.getElementById("loading").style.display = "none";
           document.getElementById("content").style.display = "block";
         })
-        .catch(err => showError("GASとの通信エラー: " + err.message));
+        .catch(err => showError("GAS通信エラー: " + err.message));
+    }
+
+    // 箇条書きを描画する関数
+    function renderMemoList(memoString) {
+      const container = document.getElementById("memoListContainer");
+      container.innerHTML = "";
+
+      // 改行や箇条書きの記号（・など）で分割して配列にする
+      if (!memoString || memoString === "まだ特別な記憶はありません。") {
+        currentMemos = [];
+        container.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">まだ特別な記憶はありません。</li>';
+        return;
+      }
+
+      // 改行ごとにバラす
+      currentMemos = memoString.split('\n').map(m => m.replace(/^[・\-\*]\s*/, '').trim()).filter(m => m !== "");
+
+      if (currentMemos.length === 0) {
+        container.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">まだ特別な記憶はありません。</li>';
+        return;
+      }
+
+      currentMemos.forEach((memo, index) => {
+        const li = document.createElement("li");
+        li.className = "memo-item";
+        li.innerHTML = `
+          <span class="memo-text">・${memo}</span>
+          <button class="btn-delete-item" onclick="deleteMemoIndex(${index})">削除</button>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    // 個別のメモを削除する
+    function deleteMemoIndex(index) {
+      if (!confirm("この記憶を削除しますか？")) return;
+      currentMemos.splice(index, 1);
+      const newMemoString = currentMemos.length > 0 ? currentMemos.map(m => "・" + m).join('\n') : "まだ特別な記憶はありません。";
+      fetchData('updateMemo', newMemoString);
+    }
+
+    // 新規メモを追加する
+    function addMemo() {
+      const input = document.getElementById("newMemoInput");
+      const val = input.value.trim();
+      if (!val) return;
+
+      if (currentMemos.length === 0 || currentMemos[0] === "まだ特別な記憶はありません。") {
+        currentMemos = [val];
+      } else {
+        currentMemos.push(val);
+      }
+
+      const newMemoString = currentMemos.map(m => "・" + m).join('\n');
+      input.value = "";
+      fetchData('updateMemo', newMemoString);
+    }
+
+    function callApi(action) {
+      if (action === 'clearAll' && !confirm("本当にすべてのメモを初期化しますか？")) return;
+      fetchData(action);
     }
   </script>
 </body>
