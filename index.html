@@ -32,7 +32,7 @@
   </style>
 </head>
 <body>
-  <!-- ⚠️ ここにご自身のLIFF IDとGASのURLを入れてください！ -->
+  <!-- ⚠️ IDとURLはさっきのものをそのまま入れます！ -->
   <script>
     const MY_LIFF_ID = "2011085090-Y3VoNpnw";
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwloEObQeewdmGNxr-BVujiQWGMSVmiJ75hzqEnz5AfUaAj3L_EY9Kc-UuagOHwtIBX/exec";
@@ -110,13 +110,11 @@
             showError(data.error);
             return;
           }
-          // ステータス反映
           document.getElementById("userName").textContent = data.name;
           document.getElementById("trustScore").textContent = data.trust;
           document.getElementById("stageName").textContent = data.stage;
           document.getElementById("mood").textContent = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
 
-          // メモを箇条書きに分解して画面に描画
           renderMemoList(data.memo);
 
           document.getElementById("loading").style.display = "none";
@@ -125,19 +123,16 @@
         .catch(err => showError("GAS通信エラー: " + err.message));
     }
 
-    // 箇条書きを描画する関数
     function renderMemoList(memoString) {
       const container = document.getElementById("memoListContainer");
       container.innerHTML = "";
 
-      // 改行や箇条書きの記号（・など）で分割して配列にする
       if (!memoString || memoString === "まだ特別な記憶はありません。") {
         currentMemos = [];
         container.innerHTML = '<li style="color: #7f8c8d; text-align: center; padding: 10px;">まだ特別な記憶はありません。</li>';
         return;
       }
 
-      // 改行ごとにバラす
       currentMemos = memoString.split('\n').map(m => m.replace(/^[・\-\*]\s*/, '').trim()).filter(m => m !== "");
 
       if (currentMemos.length === 0) {
@@ -156,7 +151,6 @@
       });
     }
 
-    // 個別のメモを削除する
     function deleteMemoIndex(index) {
       if (!confirm("この記憶を削除しますか？")) return;
       currentMemos.splice(index, 1);
@@ -164,7 +158,6 @@
       fetchData('updateMemo', newMemoString);
     }
 
-    // 新規メモを追加する
     function addMemo() {
       const input = document.getElementById("newMemoInput");
       const val = input.value.trim();
