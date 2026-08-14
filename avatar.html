@@ -20,9 +20,10 @@
     /* 現在有効な効果の表示エリア */
     .active-effect-box { background: #1e1e1e; border: 1px solid #e74c3c; border-radius: 6px; padding: 12px; margin-bottom: 15px; text-align: center; }
     
-    .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 350px; overflow-y: auto; padding-right: 5px; }
+    .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 5px; }
     .item-card { background-color: #1e1e1e; border: 1px solid #444; border-radius: 6px; padding: 10px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
-    .item-name { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #fff; }
+    .item-name { font-size: 13px; font-weight: bold; margin-bottom: 3px; color: #fff; }
+    .item-desc { font-size: 11px; color: #aaa; margin-bottom: 6px; line-height: 1.3; }
     .item-price { font-size: 12px; color: #f1c40f; margin-bottom: 8px; }
 
     .btn { display: block; width: 100%; padding: 8px; margin: 5px 0; border: none; border-radius: 5px; font-size: 13px; font-weight: bold; color: white; cursor: pointer; }
@@ -39,7 +40,7 @@
 <body>
   <script>
     const MY_LIFF_ID = "2011108007-kQlpYXHL";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwtV2YemmU3FSeMIiqfeMx4okmbRLJifwBB2rk4YsgTuksYZAdnnUAo3VzDkInEBDxO/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec";
   </script>
 
   <div id="loading">📡 データを読み込み中...</div>
@@ -82,9 +83,9 @@
   <script>
     let myUserId = "";
     let currentTrust = 0;
-    let activeEffectItemId = ""; // 現在使っている効果のitemId
-    let ownedItems = [];         // 所持しているitemIdの配列（カンマ区切りで消費される）
-    let shopItems = [];          // 全アイテムデータ
+    let activeEffectItemId = "";
+    let ownedItems = [];
+    let shopItems = [];
 
     function showError(message) {
       document.getElementById("loading").style.display = "none";
@@ -126,7 +127,7 @@
           currentTrust = data.trust;
           document.getElementById("userTrust").textContent = currentTrust;
 
-          activeEffectItemId = data.equipped || ""; // equipped列を「現在効いている効果」として使用
+          activeEffectItemId = data.equipped || "";
           ownedItems = data.owned ? data.owned.split(',').filter(Boolean) : [];
           shopItems = data.shop || [];
 
@@ -138,7 +139,6 @@
     }
 
     function updateUI() {
-      // 1. アクティブ効果の表示更新
       const activeTextEl = document.getElementById("activeEffectText");
       const clearBtnEl = document.getElementById("clearEffectBtn");
       
@@ -151,7 +151,7 @@
         clearBtnEl.style.display = "none";
       }
 
-      // 2. ショップの描画（所持していても何度でも買える仕様）
+      // ショップの描画（説明文を追加）
       const shopContainer = document.getElementById("shopItemsContainer");
       shopContainer.innerHTML = "";
       shopItems.forEach(item => {
@@ -160,6 +160,7 @@
         div.innerHTML = `
           <div>
             <div class="item-name">${item.itemName}</div>
+            <div class="item-desc">${item.description || ""}</div>
             <div class="item-price">🪙 ${item.price} pt</div>
           </div>
           <button class="btn btn-buy" onclick="buyItem('${item.itemId}', ${item.price})">購入する</button>
@@ -167,7 +168,7 @@
         shopContainer.appendChild(div);
       });
 
-      // 3. バッグ（所持アイテム）の描画
+      // バッグの描画
       const bagContainer = document.getElementById("bagItemsContainer");
       bagContainer.innerHTML = "";
       if (ownedItems.length === 0) {
@@ -182,6 +183,7 @@
           div.innerHTML = `
             <div>
               <div class="item-name">${item.itemName}</div>
+              <div class="item-desc">${item.description || ""}</div>
             </div>
             <button class="btn btn-use" onclick="useItem('${itemId}', ${index})">使用する（効果発動）</button>
           `;
@@ -190,7 +192,6 @@
       }
     }
 
-    // アイテム購入（何度でも買える＝所持リストに追加される）
     function buyItem(itemId, price) {
       if (currentTrust < price) return alert("ポイントが足りません！");
       if (!confirm(`本当に ${price} pt で購入しますか？`)) return;
@@ -207,18 +208,14 @@
         });
     }
 
-    // アイテム使用（使うとバッグから1つ消えて、効果が発動する＝消費型）
     function useItem(itemId, index) {
       let item = shopItems.find(s => s.itemId === itemId);
       if (!confirm(`「${item.itemName}」を使用しますか？\n（※使うと消費されます）`)) return;
 
-      // バッグ（owned）から今回使った1個を排除する
       ownedItems.splice(index, 1);
       let newOwnedString = ownedItems.join(',');
-      activeEffectItemId = itemId; // 効果を有効化
+      activeEffectItemId = itemId;
 
-      // GASに「効果発動(equippedにセット)」と「バッグの更新(ownedから削除)」を送信
-      let saveString = `active:${activeEffectItemId}`;
       fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(activeEffectItemId)}&subParam=${encodeURIComponent(newOwnedString)}`)
         .then(res => res.json())
         .then(data => {
@@ -229,7 +226,6 @@
         });
     }
 
-    // 効果を終了する（解除ボタン）
     function clearEffect() {
       if (!confirm("現在の効果を終了（解除）しますか？")) return;
 
