@@ -20,76 +20,65 @@
       max-width: 500px;
       margin: 0 auto;
     }
-    h1 {
-      font-size: 20px;
-      color: #2c3e50;
-      text-align: center;
-      margin-bottom: 20px;
+    h1 { font-size: 20px; color: #2c3e50; text-align: center; margin-bottom: 20px; }
+    
+    .status-box { background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .status-item { margin: 5px 0; font-size: 15px; }
+    .status-item span { font-weight: bold; color: #2980b9; }
+
+    /* 🟢 タブ切り替え用のデザイン */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #ddd;
     }
-    .status-box {
-      background: #e8f4fd;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .status-item {
-      margin: 5px 0;
-      font-size: 15px;
-    }
-    .status-item span {
+    .tab-btn {
+      flex: 1;
+      padding: 10px 5px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      font-size: 13px;
       font-weight: bold;
-      color: #2980b9;
+      color: #7f8c8d;
+      cursor: pointer;
+      transition: 0.3s;
     }
-    textarea {
+    .tab-btn:hover { color: #2980b9; }
+    .tab-btn.active {
+      color: #2980b9;
+      border-bottom: 3px solid #2980b9;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* 🟢 リッチテキストエディタのデザイン */
+    .editor {
       width: 100%;
-      height: 250px;
+      height: 200px;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 8px;
       font-size: 14px;
-      resize: vertical;
       box-sizing: border-box;
-      line-height: 1.5;
+      line-height: 1.6;
+      background-color: #fafafa;
+      overflow-y: auto;
+      outline: none;
     }
+    .editor:focus { border-color: #2980b9; background-color: #fff; }
+
     .btn {
-      display: block;
-      width: 100%;
-      padding: 12px;
-      margin-top: 15px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      text-align: center;
-      transition: background 0.3s;
+      display: block; width: 100%; padding: 12px; margin-top: 15px; border: none;
+      border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.3s;
     }
-    .btn-save {
-      background-color: #27ae60;
-      color: white;
-    }
-    .btn-save:hover {
-      background-color: #219150;
-    }
-    .btn-complement {
-      background-color: #8e44ad;
-      color: white;
-      margin-top: 10px;
-    }
-    .btn-complement:hover {
-      background-color: #732d91;
-    }
-    .btn:disabled {
-      background-color: #95a5a6;
-      cursor: not-allowed;
-    }
-    #loading {
-      text-align: center;
-      font-weight: bold;
-      color: #e67e22;
-      display: none;
-      margin-top: 15px;
-    }
+    .btn-save { background-color: #27ae60; color: white; }
+    .btn-save:hover { background-color: #219150; }
+    .btn-complement { background-color: #8e44ad; color: white; margin-top: 10px; }
+    .btn-complement:hover { background-color: #732d91; }
+    .btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+    #loading { text-align: center; font-weight: bold; color: #e67e22; display: none; margin-top: 15px; }
   </style>
 </head>
 <body>
@@ -105,8 +94,21 @@
     </div>
 
     <h3>📝 共有記憶（メモ）</h3>
-    <p style="font-size: 12px; color: #7f8c8d; margin-top: 0;">直接編集して保存することも可能です。</p>
-    <textarea id="memoTextarea" placeholder="メモを読み込んでいます..."></textarea>
+    <p style="font-size: 12px; color: #7f8c8d; margin-top: 0;">直接編集可能です。補完後の追加部分は赤字になります。</p>
+
+    <!-- タブボタン -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tab1', this)">ユーザー</button>
+      <button class="tab-btn" onclick="switchTab('tab2', this)">ラファウ</button>
+      <button class="tab-btn" onclick="switchTab('tab3', this)">思い出</button>
+      <button class="tab-btn" onclick="switchTab('tab4', this)">現在地</button>
+    </div>
+
+    <!-- 各タブの中身（直接編集できるエディタ） -->
+    <div id="tab1" class="tab-content active"><div id="editor-user" class="editor" contenteditable="true">読込中...</div></div>
+    <div id="tab2" class="tab-content"><div id="editor-rafau" class="editor" contenteditable="true">読込中...</div></div>
+    <div id="tab3" class="tab-content"><div id="editor-mems" class="editor" contenteditable="true">読込中...</div></div>
+    <div id="tab4" class="tab-content"><div id="editor-curE" class="editor" contenteditable="true">読込中...</div></div>
     
     <button id="saveBtn" class="btn btn-save" onclick="saveMemo()">手動でメモを上書き保存 💾</button>
     <button id="complementBtn" class="btn btn-complement" onclick="complementMemo()">過去の会話から記憶を補完する ✨</button>
@@ -117,13 +119,14 @@
   <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    // ==========================================
-    // 🔑 設定（ご自身のものに書き換えてください）
+   // ==========================================
+    // 🔑 設定
     // ==========================================
     const LIFF_ID = "2011085090-Y3VoNpnw"; 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec";
     
     let currentUserId = "";
+    let currentMemoData = { userP: "", rafauP: "", mems: "", curE: "" }; // 比較用保存データ
 
     // LIFF初期化
     liff.init({ liffId: LIFF_ID })
@@ -137,69 +140,102 @@
           });
         }
       })
-      .catch(err => {
-        console.error("LIFF Initialization failed", err);
-        alert("LIFFの初期化に失敗しました。");
-      });
+      .catch(err => { alert("LIFFの初期化に失敗しました。"); });
+
+    // 🟢 タブ切り替え処理
+    function switchTab(tabId, btnElement) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btnElement.classList.add('active');
+    }
+
+    // 🟢 メモを4つの項目に分解する関数（JS版）
+    function parseMemoClient(text) {
+      let userP = (text.match(/【ユーザープロフィール】\s*([\s\S]*?)(?=【ラファウプロフィール】|【特別な思い出】|【現在起きていること】|$)/) || ["", ""])[1].trim();
+      let rafauP = (text.match(/【ラファウプロフィール】\s*([\s\S]*?)(?=【ユーザープロフィール】|【特別な思い出】|【現在起きていること】|$)/) || ["", ""])[1].trim();
+      let mems = (text.match(/【特別な思い出】\s*([\s\S]*?)(?=【ユーザープロフィール】|【ラファウプロフィール】|【現在起きていること】|$)/) || ["", ""])[1].trim();
+      let curE = (text.match(/【現在起きていること】\s*([\s\S]*?)(?=【ユーザープロフィール】|【ラファウプロフィール】|【特別な思い出】|$)/) || ["", ""])[1].trim();
+      return { userP, rafauP, mems, curE };
+    }
+
+    // 🟢 古いメモと新しいメモを比較して、新しい行を赤文字タグ（span）で囲む関数
+    function highlightDiff(oldText, newText) {
+      const oldLines = oldText.split('\n').map(l => l.trim()).filter(l => l);
+      const newLines = newText.split('\n');
+      
+      return newLines.map(line => {
+        const trimmed = line.trim();
+        // 古いメモに存在しない新しい行があれば赤字にする
+        if (trimmed && !oldLines.includes(trimmed)) {
+          return `<span style="color: #e74c3c; font-weight: bold;">${line}</span><br>`;
+        }
+        return `${line}<br>`;
+      }).join('');
+    }
 
     // データ取得（ステータス＆メモ）
     function fetchData() {
-      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) // ステータス読み込み用として代用可能ですが、基本のdoGetを叩きます
+      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) 
         .then(response => response.json())
-        .then(data => {
-          if(data.error) {
-            alert(data.error);
-            return;
-          }
-          // fallback的に、通常のステータス取得を再度行う
-          return fetch(`${GAS_URL}?userId=${currentUserId}`);
-        })
+        .then(data => { if(data.error) throw new Error(data.error); return fetch(`${GAS_URL}?userId=${currentUserId}`); })
         .then(response => response.json())
         .then(data => {
           document.getElementById('userName').innerText = data.name || "名無し";
           document.getElementById('trustScore').innerText = data.trust;
           document.getElementById('stageName').innerText = data.stage;
           document.getElementById('moodState').innerText = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
-          document.getElementById('memoTextarea').value = data.memo;
+          
+          // メモをパースして各タブのエディタに割り当て
+          currentMemoData = parseMemoClient(data.memo);
+          document.getElementById('editor-user').innerText = currentMemoData.userP;
+          document.getElementById('editor-rafau').innerText = currentMemoData.rafauP;
+          document.getElementById('editor-mems').innerText = currentMemoData.mems;
+          document.getElementById('editor-curE').innerText = currentMemoData.curE;
         })
-        .catch(error => {
-          console.error('Error:', error);
-          alert("データの読み込みに失敗しました。");
-        });
+        .catch(error => { alert("データの読み込みに失敗しました。"); });
     }
 
     // 手動でのメモ保存処理
     function saveMemo() {
-      const newMemo = document.getElementById('memoTextarea').value;
       const btn = document.getElementById('saveBtn');
-      btn.innerText = "保存中... ⏳";
-      btn.disabled = true;
+      btn.innerText = "保存中... ⏳"; btn.disabled = true;
 
-      fetch(`${GAS_URL}?userId=${currentUserId}&action=updateMemo&param=${encodeURIComponent(newMemo)}`)
+      // innerTextを使って、赤文字用のHTMLタグを無視して純粋なテキストだけを結合する
+      const userP = document.getElementById('editor-user').innerText;
+      const rafauP = document.getElementById('editor-rafau').innerText;
+      const mems = document.getElementById('editor-mems').innerText;
+      const curE = document.getElementById('editor-curE').innerText;
+
+      const newFullMemo = `【ユーザープロフィール】\n${userP}\n\n【ラファウプロフィール】\n${rafauP}\n\n【特別な思い出】\n${mems}\n\n【現在起きていること】\n${curE}`;
+
+      fetch(`${GAS_URL}?userId=${currentUserId}&action=updateMemo&param=${encodeURIComponent(newFullMemo)}`)
         .then(response => response.json())
         .then(data => {
-          alert("メモを手動保存しました！");
-          btn.innerText = "手動でメモを上書き保存 💾";
-          btn.disabled = false;
+          alert("メモを手動保存しました！（赤文字も通常の色として保存・リセットされました）");
+          
+          // 色をリセットして通常テキストとして再描画
+          currentMemoData = parseMemoClient(newFullMemo);
+          document.getElementById('editor-user').innerText = currentMemoData.userP;
+          document.getElementById('editor-rafau').innerText = currentMemoData.rafauP;
+          document.getElementById('editor-mems').innerText = currentMemoData.mems;
+          document.getElementById('editor-curE').innerText = currentMemoData.curE;
+
+          btn.innerText = "手動でメモを上書き保存 💾"; btn.disabled = false;
         })
-        .catch(err => {
-          alert("保存エラー");
-          btn.innerText = "手動でメモを上書き保存 💾";
-          btn.disabled = false;
-        });
+        .catch(err => { alert("保存エラー"); btn.innerText = "手動でメモを上書き保存 💾"; btn.disabled = false; });
     }
 
-    // 🟢 追加：過去の会話から記憶を補完する魔法の処理
+    // 過去の会話から記憶を補完する魔法の処理（差分を赤文字にする）
     function complementMemo() {
-      const isConfirm = confirm("過去の会話履歴をAIが読み込み、メモに不足している設定や思い出を自動で追記します。数十秒かかる場合がありますが、実行しますか？");
+      const isConfirm = confirm("過去の会話履歴をAIが読み込み、メモに不足している設定や思い出を自動で追記します。数十秒かかりますが実行しますか？");
       if(!isConfirm) return;
 
       const btn = document.getElementById('complementBtn');
       const saveBtn = document.getElementById('saveBtn');
       const loading = document.getElementById('loading');
       
-      btn.disabled = true;
-      saveBtn.disabled = true;
+      btn.disabled = true; saveBtn.disabled = true;
       btn.style.backgroundColor = "#95a5a6";
       loading.style.display = "block";
 
@@ -207,23 +243,32 @@
         .then(response => response.json())
         .then(data => {
           loading.style.display = "none";
-          btn.disabled = false;
-          saveBtn.disabled = false;
+          btn.disabled = false; saveBtn.disabled = false;
           btn.style.backgroundColor = "#8e44ad";
 
           if(data.error) {
             alert("エラー: " + data.error);
           } else if(data.success) {
-            document.getElementById('memoTextarea').value = data.memo;
-            alert("✨ メモの補完が完了しました！\n\nAIが過去の会話から大事な設定を拾い上げて追記しました。内容を確認してください。");
+            // 新しくAIが作ったメモをパース
+            const newMemoData = parseMemoClient(data.memo);
+            
+            // 以前のメモと比較して、新しく追加された行だけを赤文字（HTMLタグ）にしてタブに反映
+            document.getElementById('editor-user').innerHTML = highlightDiff(currentMemoData.userP, newMemoData.userP);
+            document.getElementById('editor-rafau').innerHTML = highlightDiff(currentMemoData.rafauP, newMemoData.rafauP);
+            document.getElementById('editor-mems').innerHTML = highlightDiff(currentMemoData.mems, newMemoData.mems);
+            document.getElementById('editor-curE').innerHTML = highlightDiff(currentMemoData.curE, newMemoData.curE);
+
+            // 基準となるデータを更新
+            currentMemoData = newMemoData;
+
+            alert("✨ 記憶の補完が完了しました！\n\nAIが追加した情報が『赤文字』で表示されています。各タブを確認して、問題なければ【手動でメモを上書き保存】を押してください。");
           }
         })
         .catch(err => {
           loading.style.display = "none";
-          btn.disabled = false;
-          saveBtn.disabled = false;
+          btn.disabled = false; saveBtn.disabled = false;
           btn.style.backgroundColor = "#8e44ad";
-          alert("通信エラーが発生しました。時間を置いて再度お試しください。");
+          alert("通信エラーが発生しました。");
         });
     }
   </script>
