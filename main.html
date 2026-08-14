@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>アバター＆ショップ</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a1a; color: #f0f0f0; padding: 20px; box-sizing: border-box; }
+    .card { background-color: #2c2c2c; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 5px solid #e74c3c; }
+    h2 { margin-top: 0; color: #e74c3c; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+    .status-item { margin: 10px 0; font-size: 16px; }
+    .label { color: #aaa; font-size: 14px; }
+    
+    .tab-container { display: flex; margin-bottom: 15px; border-bottom: 2px solid #444; }
+    .tab-btn { flex: 1; background: none; border: none; padding: 10px; color: #aaa; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; }
+    .tab-btn.active { color: #e74c3c; border-bottom: 2px solid #e74c3c; margin-bottom: -2px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .avatar-preview { text-align: center; background-color: #1e1e1e; padding: 20px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px; }
+    .avatar-box { font-size: 48px; margin-bottom: 10px; }
+    
+    .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .item-card { background-color: #1e1e1e; border: 1px solid #444; border-radius: 6px; padding: 10px; text-align: center; }
+    .item-name { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #fff; }
+    .item-price { font-size: 12px; color: #f1c40f; margin-bottom: 8px; }
+
+    .btn { display: block; width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; color: white; cursor: pointer; }
+    .btn-buy { background-color: #e67e22; }
+    .btn-equip { background-color: #27ae60; }
+    .btn-unequip { background-color: #7f8c8d; }
+    .btn-close { background-color: #555; margin-top: 20px; }
+
+    #loading { text-align: center; color: #aaa; margin-top: 50px; }
+    #error-box { display: none; background-color: #c0392b; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; word-break: break-all; }
+    #content { display: none; }
+  </style>
+</head>
+<body>
+  <script>
+    const MY_LIFF_ID = "2011108007-kQlpYXHL";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec";
+  </script>
+
+  <div id="loading">📡 アバターデータを読み込み中...</div>
+  <div id="error-box"></div>
+
+  <div id="content">
+    <div class="card">
+      <h2>👤 マイアバター</h2>
+      <div class="status-item"><span class="label">所持ポイント（好感度）:</span> <strong id="userTrust" style="color: #f1c40f;">0</strong> pt</div>
+      
+      <div class="avatar-preview">
+        <div class="avatar-box">🧍‍♂️</div>
+        <div id="currentEquipText" style="font-size: 13px; color: #aaa;">現在の装備：なし</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tab-container">
+        <button class="tab-btn active" onclick="switchTab('closet')">クローゼット（所持品）</button>
+        <button class="tab-btn" onclick="switchTab('shop')">ショップ</button>
+      </div>
+
+      <div id="tab-closet" class="tab-content active">
+        <div id="ownedItemsContainer" class="item-grid"></div>
+      </div>
+
+      <div id="tab-shop" class="tab-content">
+        <div id="shopItemsContainer" class="item-grid"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-close" onclick="liff.closeWindow()">✖️ 画面を閉じる</button>
+  </div>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    let myUserId = "";
+    let currentTrust = 0;
+    let equippedItems = {}; 
+    let ownedItems = [];    
+    let shopItems = [];     
+
+    function showError(message) {
+      document.getElementById("loading").style.display = "none";
+      const errorBox = document.getElementById("error-box");
+      errorBox.style.display = "block";
+      errorBox.innerHTML = "⚠️ <b>エラー</b><br><br>" + message;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("userId")) {
+        myUserId = urlParams.get("userId");
+        loadAvatarData();
+        return;
+      }
+
+      liff.init({ liffId: MY_LIFF_ID }).then(() => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        } else {
+          liff.getProfile().then(profile => {
+            myUserId = profile.userId;
+            if (!myUserId) {
+              showError("ユーザーIDが取得できませんでした。LINEアプリ内から開いているかご確認ください。");
+              return;
+            }
+            loadAvatarData();
+          }).catch(err => showError("プロフィール取得エラー: " + err.message));
+        }
+      }).catch(err => showError("LIFF初期化エラー: " + err.message));
+    });
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      if (tabName === 'closet') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('tab-closet').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('tab-shop').classList.add('active');
+      }
+    }
+
+    function loadAvatarData() {
+      let url = GAS_API_URL + "?userId=" + encodeURIComponent(myUserId) + "&action=getAvatarData";
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            showError(data.error);
+            return;
+          }
+          currentTrust = data.trust;
+          document.getElementById("userTrust").textContent = currentTrust;
+
+          equippedItems = {};
+          if (data.equipped) {
+            data.equipped.split(',').forEach(pair => {
+              let parts = pair.split(':');
+              if (parts.length === 2) equippedItems[parts[0]] = parts[1];
+            });
+          }
+
+          ownedItems = data.owned ? data.owned.split(',') : [];
+          shopItems = data.shop || [];
+
+          updateUI();
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("content").style.display = "block";
+        })
+        .catch(err => showError("データ通信エラー: " + err.message));
+    }
+
+    function updateUI() {
+      let equipText = Object.keys(equippedItems).length === 0 ? "なし" : Object.entries(equippedItems).map(([k, v]) => `${k}:${v}`).join(', ');
+      document.getElementById("currentEquipText").textContent = "現在の装備：" + equipText;
+
+      const closetContainer = document.getElementById("ownedItemsContainer");
+      closetContainer.innerHTML = "";
+      
+      if (ownedItems.length === 0) {
+        closetContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">所持しているアイテムはありません。<br>ショップで交換してみよう！</div>';
+      } else {
+        ownedItems.forEach(itemId => {
+          let item = shopItems.find(s => s.itemId === itemId);
+          if (!item) return;
+
+          let isEquipped = Object.values(equippedItems).includes(itemId);
+
+          let div = document.createElement("div");
+          div.className = "item-card";
+          div.innerHTML = `
+            <div class="item-name">${item.itemName}</div>
+            <div class="label" style="font-size:11px;">[${item.category}]</div>
+            <button class="btn ${isEquipped ? 'btn-unequip' : 'btn-equip'}" onclick="toggleEquip('${item.category}', '${item.itemId}')">
+              ${isEquipped ? '外す' : '身につける'}
+            </button>
+          `;
+          closetContainer.appendChild(div);
+        });
+      }
+
+      const shopContainer = document.getElementById("shopItemsContainer");
+      shopContainer.innerHTML = "";
+
+      if (shopItems.length === 0) {
+        shopContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">現在販売中のアイテムはありません。</div>';
+      } else {
+        shopItems.forEach(item => {
+          let isOwned = ownedItems.includes(item.itemId);
+
+          let div = document.createElement("div");
+          div.className = "item-card";
+          div.innerHTML = `
+            <div class="item-name">${item.itemName}</div>
+            <div class="item-price">🪙 ${item.price} pt</div>
+            <button class="btn btn-buy" ${isOwned ? 'disabled style="background-color:#444; color:#777;"' : ''} onclick="buyItem('${item.itemId}', ${item.price})">
+              ${isOwned ? '所持済み' : '購入する'}
+            </button>
+          `;
+          shopContainer.appendChild(div);
+        });
+      }
+    }
+
+    function buyItem(itemId, price) {
+      if (currentTrust < price) {
+        alert("ポイント（好感度）が足りません！");
+        return;
+      }
+      if (!confirm(`本当に ${price} pt で購入しますか？`)) return;
+
+      let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=buyItem&param=${encodeURIComponent(itemId)}&subParam=${price}`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            alert(data.error);
+            return;
+          }
+          currentTrust = data.trust;
+          document.getElementById("userTrust").textContent = currentTrust;
+          ownedItems = data.owned.split(',');
+          updateUI();
+          alert("購入しました！");
+        })
+        .catch(err => alert("通信エラー: " + err.message));
+    }
+
+    function toggleEquip(category, itemId) {
+      if (equippedItems[category] === itemId) {
+        delete equippedItems[category]; 
+      } else {
+        equippedItems[category] = itemId; 
+      }
+
+      let equipString = Object.entries(equippedItems).map(([k, v]) => `${k}:${v}`).join(',');
+      
+      let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(equipString)}`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            updateUI();
+          }
+        })
+        .catch(err => alert("保存エラー: " + err.message));
+    }
+  </script>
+</body>
+</html>
