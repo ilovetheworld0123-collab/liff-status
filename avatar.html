@@ -35,14 +35,14 @@
     .btn-close { background-color: #555; margin-top: 20px; }
 
     #loading { text-align: center; color: #aaa; margin-top: 50px; }
-    #error-box { display: none; background-color: #c0392b; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; }
+    #error-box { display: none; background-color: #c0392b; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; word-break: break-all; }
     #content { display: none; }
   </style>
 </head>
 <body>
   <script>
-    const MY_LIFF_ID = "2011108007-kQlpYXHL"; // 後で置き換えてください
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec"; // すでに使っているGASのURL
+    const MY_LIFF_ID = "2011108007-kQlpYXHL";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec";
   </script>
 
   <div id="loading">📡 アバターデータを読み込み中...</div>
@@ -89,9 +89,9 @@
   <script>
     let myUserId = "";
     let currentTrust = 0;
-    let equippedItems = {}; // { category: itemId }
-    let ownedItems = [];    // [itemId, itemId...]
-    let shopItems = [];     // [{itemId, category, itemName, price, imageUrl}]
+    let equippedItems = {}; 
+    let ownedItems = [];    
+    let shopItems = [];     
 
     function showError(message) {
       document.getElementById("loading").style.display = "none";
@@ -101,12 +101,24 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+      // 念のためURLパラメータからもuserIdが拾えるようにしておく
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("userId")) {
+        myUserId = urlParams.get("userId");
+        loadAvatarData();
+        return;
+      }
+
       liff.init({ liffId: MY_LIFF_ID }).then(() => {
         if (!liff.isLoggedIn()) {
           liff.login();
         } else {
           liff.getProfile().then(profile => {
             myUserId = profile.userId;
+            if (!myUserId) {
+              showError("ユーザーIDが取得できませんでした。LINEアプリ内から開いているかご確認ください。");
+              return;
+            }
             loadAvatarData();
           }).catch(err => showError("プロフィール取得エラー: " + err.message));
         }
@@ -127,7 +139,7 @@
     }
 
     function loadAvatarData() {
-      let url = GAS_API_URL + "?userId=" + myUserId + "&action=getAvatarData";
+      let url = GAS_API_URL + "?userId=" + encodeURIComponent(myUserId) + "&action=getAvatarData";
       fetch(url)
         .then(res => res.json())
         .then(data => {
@@ -138,7 +150,6 @@
           currentTrust = data.trust;
           document.getElementById("userTrust").textContent = currentTrust;
 
-          // 装備データのパース ("hair:1,clothes:2" -> {hair: "1", clothes: "2"})
           equippedItems = {};
           if (data.equipped) {
             data.equipped.split(',').forEach(pair => {
@@ -158,11 +169,9 @@
     }
 
     function updateUI() {
-      // 装備テキストの更新
       let equipText = Object.keys(equippedItems).length === 0 ? "なし" : Object.entries(equippedItems).map(([k, v]) => `${k}:${v}`).join(', ');
       document.getElementById("currentEquipText").textContent = "現在の装備：" + equipText;
 
-      // クローゼット（所持品）の描画
       const closetContainer = document.getElementById("ownedItemsContainer");
       closetContainer.innerHTML = "";
       
@@ -188,7 +197,6 @@
         });
       }
 
-      // ショップの描画
       const shopContainer = document.getElementById("shopItemsContainer");
       shopContainer.innerHTML = "";
 
@@ -219,7 +227,7 @@
       }
       if (!confirm(`本当に ${price} pt で購入しますか？`)) return;
 
-      let url = `${GAS_API_URL}?userId=${myUserId}&action=buyItem&param=${itemId}&subParam=${price}`;
+      let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=buyItem&param=${encodeURIComponent(itemId)}&subParam=${price}`;
       fetch(url)
         .then(res => res.json())
         .then(data => {
@@ -238,15 +246,14 @@
 
     function toggleEquip(category, itemId) {
       if (equippedItems[category] === itemId) {
-        delete equippedItems[category]; // 外す
+        delete equippedItems[category]; 
       } else {
-        equippedItems[category] = itemId; // 着替える
+        equippedItems[category] = itemId; 
       }
 
-      // サーバーに保存 ("hair:1,clothes:2" の形式に変換)
       let equipString = Object.entries(equippedItems).map(([k, v]) => `${k}:${v}`).join(',');
       
-      let url = `${GAS_API_URL}?userId=${myUserId}&action=saveAvatar&param=${encodeURIComponent(equipString)}`;
+      let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(equipString)}`;
       fetch(url)
         .then(res => res.json())
         .then(data => {
