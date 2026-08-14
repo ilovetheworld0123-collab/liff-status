@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>アバター＆着せ替えショップ</title>
+  <title>アイテムショップ ＆ 特殊効果</title>
   <style>
     body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a1a; color: #f0f0f0; padding: 20px; box-sizing: border-box; }
     .card { background-color: #2c2c2c; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 5px solid #e74c3c; }
@@ -12,69 +12,28 @@
     .label { color: #aaa; font-size: 13px; }
     
     .tab-container { display: flex; margin-bottom: 15px; border-bottom: 2px solid #444; }
-    .tab-btn { flex: 1; background: none; border: none; padding: 8px 5px; color: #aaa; font-size: 12px; font-weight: bold; cursor: pointer; text-align: center; }
+    .tab-btn { flex: 1; background: none; border: none; padding: 10px; color: #aaa; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; }
     .tab-btn.active { color: #e74c3c; border-bottom: 2px solid #e74c3c; margin-bottom: -2px; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    .avatar-preview { text-align: center; margin-bottom: 15px; }
+    /* 現在有効な効果の表示エリア */
+    .active-effect-box { background: #1e1e1e; border: 1px solid #e74c3c; border-radius: 6px; padding: 12px; margin-bottom: 15px; text-align: center; }
     
-    /* ステージの高さを広げて全身が収まるように変更 */
-    .avatar-stage {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%; height: 260px;
-      margin: 0 auto 10px auto;
-      background: #ffffff;
-      border-radius: 12px;
-      border: 2px solid #555;
-    }
-
-    .crop-box { position: relative; overflow: hidden; }
-
-    /* 全身が綺麗に収まる初期値に設定 */
-    .rafau-box { width: 120px; height: 220px; }
-    #preview-rafau {
-      position: absolute; width: 100%; height: 100%;
-      background-size: 300% 100%;
-      transform: scale(0.85); /* 縮小して全体を収める */
-    }
-
-    .girl-box {
-      width: 110px; height: 220px; margin-left: 10px;
-    }
-    #preview-girl {
-      position: absolute; width: 100%; height: 100%;
-      background-size: 400% 500%;
-      transform: scale(0.85) translateY(-5px); /* 縮小して全体を収める */
-    }
-    
-    .shop-category-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
-    .cat-btn { flex: 1; padding: 8px 2px; background: #333; border: 1px solid #555; color: #aaa; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;}
-    .cat-btn.active { background: #e74c3c; color: white; border-color: #e74c3c; }
-
-    .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 5px; }
-    .item-card { background-color: #1e1e1e; border: 1px solid #444; border-radius: 6px; padding: 10px; text-align: center; }
+    .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 350px; overflow-y: auto; padding-right: 5px; }
+    .item-card { background-color: #1e1e1e; border: 1px solid #444; border-radius: 6px; padding: 10px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
     .item-name { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #fff; }
     .item-price { font-size: 12px; color: #f1c40f; margin-bottom: 8px; }
 
     .btn { display: block; width: 100%; padding: 8px; margin: 5px 0; border: none; border-radius: 5px; font-size: 13px; font-weight: bold; color: white; cursor: pointer; }
     .btn-buy { background-color: #e67e22; }
-    .btn-equip { background-color: #27ae60; }
-    .btn-unequip { background-color: #7f8c8d; }
+    .btn-use { background-color: #27ae60; }
+    .btn-clear { background-color: #c0392b; }
     .btn-close { background-color: #555; margin-top: 20px; }
 
     #loading { text-align: center; color: #aaa; margin-top: 50px; }
     #error-box { display: none; background-color: #c0392b; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; word-break: break-all; }
     #content { display: none; }
-
-    /* 調整パネル用のデザイン */
-    .slider-row { margin-bottom: 12px; }
-    .slider-row label { display: block; font-size: 11px; color: #aaa; margin-bottom: 3px; }
-    .slider-row input[type="range"] { width: 100%; }
-    .slider-val { color: #e74c3c; font-weight: bold; }
-    #css-output { width: 100%; height: 70px; background: #111; color: #0f0; border: 1px solid #444; padding: 8px; font-size: 11px; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -83,67 +42,36 @@
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec";
   </script>
 
-  <div id="loading">📡 アバターデータを読み込み中...</div>
+  <div id="loading">📡 データを読み込み中...</div>
   <div id="error-box"></div>
 
   <div id="content">
     <div class="card">
-      <h2>👤 マイアバター</h2>
+      <h2>🍷 特殊アイテム・効果管理</h2>
       <div class="status-item"><span class="label">所持ポイント:</span> <strong id="userTrust" style="color: #f1c40f;">0</strong> pt</div>
       
-      <div class="avatar-preview">
-        <div class="avatar-stage">
-          <div class="crop-box rafau-box">
-            <div id="preview-rafau"></div>
-          </div>
-          <div class="crop-box girl-box" id="girl-box-el">
-            <div id="preview-girl"></div>
-          </div>
-        </div>
-        <div id="currentEquipText" style="font-size: 12px; color: #aaa; line-height: 1.5; margin-top: 5px;"></div>
+      <!-- 現在の効果表示 ＆ 解除ボタン -->
+      <div class="active-effect-box">
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">現在の有効な効果：</div>
+        <div id="activeEffectText" style="font-size: 14px; font-weight: bold; color: #2ecc71; margin-bottom: 10px;">なし（通常状態）</div>
+        <button id="clearEffectBtn" class="btn btn-clear" style="display:none;" onclick="clearEffect()">効果を終了する（解除）</button>
       </div>
     </div>
 
     <div class="card">
       <div class="tab-container">
-        <button class="tab-btn active" onclick="switchTab('closet')">クローゼット</button>
-        <button class="tab-btn" onclick="switchTab('shop')">ショップ</button>
-        <button class="tab-btn" onclick="switchTab('adjust')" style="color:#f1c40f;">🛠 調整</button>
+        <button class="tab-btn active" onclick="switchTab('shop')">アイテムショップ</button>
+        <button class="tab-btn" onclick="switchTab('bag')">所持アイテム（バッグ）</button>
       </div>
 
-      <div id="tab-closet" class="tab-content active">
-        <div id="ownedItemsContainer" class="item-grid"></div>
-      </div>
-
-      <div id="tab-shop" class="tab-content">
-        <div class="shop-category-tabs">
-          <button id="cat-modern" class="cat-btn active" onclick="switchShopCategory('modern')">👗 現代風</button>
-          <button id="cat-medieval" class="cat-btn" onclick="switchShopCategory('medieval')">🛡️ 15世紀</button>
-          <button id="cat-rafau" class="cat-btn" onclick="switchShopCategory('rafau')">👦 ラファウ</button>
-        </div>
+      <!-- ショップタブ -->
+      <div id="tab-shop" class="tab-content active">
         <div id="shopItemsContainer" class="item-grid"></div>
       </div>
 
-      <!-- 🟢 スライダー調整画面 -->
-      <div id="tab-adjust" class="tab-content">
-        <p style="font-size:11px; color:#ccc; margin-top:0;">スライダーで女の子の大きさと位置を微調整できます。</p>
-        
-        <div class="slider-row">
-          <label>枠の幅 (width): <span id="val-w" class="slider-val">110</span>px</label>
-          <input type="range" id="sl-w" min="50" max="200" value="110" oninput="applyAdjustments()">
-        </div>
-        <div class="slider-row">
-          <label>枠の高さ (height): <span id="val-h" class="slider-val">220</span>px</label>
-          <input type="range" id="sl-h" min="100" max="300" value="220" oninput="applyAdjustments()">
-        </div>
-        <div class="slider-row">
-          <label>全体縮小・拡大 (scale): <span id="val-s" class="slider-val">0.85</span>倍</label>
-          <input type="range" id="sl-s" min="0.3" max="1.5" step="0.05" value="0.85" oninput="applyAdjustments()">
-        </div>
-        <div class="slider-row">
-          <label>上下移動 (Y): <span id="val-y" class="slider-val">-5</span>px</label>
-          <input type="range" id="sl-y" min="-100" max="100" value="-5" oninput="applyAdjustments()">
-        </div>
+      <!-- バッグタブ（所持品一覧・使用する） -->
+      <div id="tab-bag" class="tab-content">
+        <div id="bagItemsContainer" class="item-grid"></div>
       </div>
     </div>
 
@@ -154,30 +82,9 @@
   <script>
     let myUserId = "";
     let currentTrust = 0;
-    let equippedItems = { girl: "", rafau: "" }; 
-    let ownedItems = [];     
-    let shopItems = [];      
-    let currentShopCategory = 'modern'; 
-
-    const IMG_MODERN = "https://i.imgur.com/gwU0Lcc.png";
-    const IMG_MEDIEVAL = "https://i.imgur.com/Vpd9s4W.png";
-    const IMG_RAFAU = "https://i.imgur.com/3j04EcO.png";
-
-    function applyAdjustments() {
-      let w = document.getElementById('sl-w').value;
-      let h = document.getElementById('sl-h').value;
-      let s = document.getElementById('sl-s').value;
-      let y = document.getElementById('sl-y').value;
-
-      document.getElementById('val-w').innerText = w;
-      document.getElementById('val-h').innerText = h;
-      document.getElementById('val-s').innerText = s;
-      document.getElementById('val-y').innerText = y;
-
-      document.getElementById('girl-box-el').style.width = w + 'px';
-      document.getElementById('girl-box-el').style.height = h + 'px';
-      document.getElementById('preview-girl').style.transform = `scale(${s}) translateY(${y}px)`;
-    }
+    let activeEffectItemId = ""; // 現在使っている効果のitemId
+    let ownedItems = [];         // 所持しているitemIdの配列（カンマ区切りで消費される）
+    let shopItems = [];          // 全アイテムデータ
 
     function showError(message) {
       document.getElementById("loading").style.display = "none";
@@ -190,7 +97,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get("userId")) {
         myUserId = urlParams.get("userId");
-        loadAvatarData();
+        loadData();
         return;
       }
       liff.init({ liffId: MY_LIFF_ID }).then(() => {
@@ -198,7 +105,7 @@
         else {
           liff.getProfile().then(profile => {
             myUserId = profile.userId;
-            loadAvatarData();
+            loadData();
           }).catch(err => showError("プロフィール取得エラー: " + err.message));
         }
       }).catch(err => showError("LIFF初期化エラー: " + err.message));
@@ -208,19 +115,10 @@
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       document.getElementById('tab-' + tabName).classList.add('active');
-      
-      let index = tabName === 'closet' ? 0 : (tabName === 'shop' ? 1 : 2);
-      document.querySelectorAll('.tab-btn')[index].classList.add('active');
+      document.querySelectorAll('.tab-btn')[tabName === 'shop' ? 0 : 1].classList.add('active');
     }
 
-    function switchShopCategory(category) {
-      currentShopCategory = category;
-      document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('cat-' + category).classList.add('active');
-      updateUI();
-    }
-
-    function loadAvatarData() {
+    function loadData() {
       fetch(GAS_API_URL + "?userId=" + encodeURIComponent(myUserId) + "&action=getAvatarData")
         .then(res => res.json())
         .then(data => {
@@ -228,135 +126,122 @@
           currentTrust = data.trust;
           document.getElementById("userTrust").textContent = currentTrust;
 
-          let rawEquipped = data.equipped || "";
-          equippedItems = { girl: "", rafau: "" };
-          if (rawEquipped) {
-            rawEquipped.split(',').forEach(p => {
-              if (p.includes(':')) {
-                let parts = p.split(':');
-                equippedItems[parts[0]] = parts[1];
-              } else {
-                if(p.startsWith('r')) equippedItems.rafau = p;
-                else equippedItems.girl = p;
-              }
-            });
-          }
-          ownedItems = data.owned ? data.owned.split(',') : [];
+          activeEffectItemId = data.equipped || ""; // equipped列を「現在効いている効果」として使用
+          ownedItems = data.owned ? data.owned.split(',').filter(Boolean) : [];
           shopItems = data.shop || [];
 
           updateUI();
           document.getElementById("loading").style.display = "none";
           document.getElementById("content").style.display = "block";
-          applyAdjustments();
         })
         .catch(err => showError("通信エラー"));
     }
 
-    function updateAvatarPreview() {
-      const girlEl = document.getElementById("preview-girl");
-      const rafauEl = document.getElementById("preview-rafau");
-      let equipTexts = [];
-
-      if (equippedItems.rafau) {
-        let rItem = shopItems.find(s => s.itemId === equippedItems.rafau);
-        if (rItem) {
-          let rIndex = parseInt(rItem.imageUrl) || 0;
-          rafauEl.style.backgroundImage = `url('${IMG_RAFAU}')`;
-          rafauEl.style.backgroundPosition = `${rIndex * 50}% 0%`;
-          equipTexts.push("👨 彼：" + rItem.itemName.replace('ラファウ: ',''));
-        }
-      } else rafauEl.style.backgroundImage = "none";
-
-      if (equippedItems.girl) {
-        let gItem = shopItems.find(s => s.itemId === equippedItems.girl);
-        if (gItem) {
-          let gUrl = (gItem.category === 'medieval') ? IMG_MEDIEVAL : IMG_MODERN;
-          let gIndex = parseInt(gItem.imageUrl) || 0;
-          girlEl.style.backgroundImage = `url('${gUrl}')`;
-          girlEl.style.backgroundPosition = `${(gIndex % 4) * 33.333}% ${Math.floor(gIndex / 4) * 25}%`;
-          equipTexts.push("👗 私：" + gItem.itemName);
-        }
-      } else girlEl.style.backgroundImage = "none";
-
-      document.getElementById("currentEquipText").innerHTML = equipTexts.length > 0 ? equipTexts.join('<br>') : "現在のコーデ：未設定";
-    }
-
     function updateUI() {
-      updateAvatarPreview();
-
-      const closetContainer = document.getElementById("ownedItemsContainer");
-      closetContainer.innerHTML = "";
-      if (ownedItems.length === 0) {
-        closetContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">所持品がありません。</div>';
+      // 1. アクティブ効果の表示更新
+      const activeTextEl = document.getElementById("activeEffectText");
+      const clearBtnEl = document.getElementById("clearEffectBtn");
+      
+      if (activeEffectItemId) {
+        let activeItem = shopItems.find(s => s.itemId === activeEffectItemId);
+        activeTextEl.textContent = activeItem ? `✨ 発動中：${activeItem.itemName}` : "✨ 発動中（効果あり）";
+        clearBtnEl.style.display = "block";
       } else {
-        ownedItems.forEach(itemId => {
-          let item = shopItems.find(s => s.itemId === itemId);
-          if (!item) return;
-          let isRafau = item.category === 'rafau';
-          let isEquipped = (isRafau ? equippedItems.rafau : equippedItems.girl) === itemId;
-
-          let div = document.createElement("div");
-          div.className = "item-card";
-          div.innerHTML = `
-            <div class="item-name">${item.itemName}</div>
-            <div class="label" style="font-size:11px;">[${isRafau ? 'ラファウ' : (item.category === 'medieval' ? '15世紀風' : '現代風')}]</div>
-            <button class="btn ${isEquipped ? 'btn-unequip' : 'btn-equip'}" onclick="toggleEquip('${item.itemId}', ${isRafau})">
-              ${isEquipped ? '着用中' : '着替える'}
-            </button>
-          `;
-          closetContainer.appendChild(div);
-        });
+        activeTextEl.textContent = "なし（通常状態）";
+        clearBtnEl.style.display = "none";
       }
 
+      // 2. ショップの描画（所持していても何度でも買える仕様）
       const shopContainer = document.getElementById("shopItemsContainer");
       shopContainer.innerHTML = "";
-      let filteredShop = shopItems.filter(item => item.category === currentShopCategory);
-      if (filteredShop.length === 0) {
-        shopContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">アイテムがありません。</div>';
+      shopItems.forEach(item => {
+        let div = document.createElement("div");
+        div.className = "item-card";
+        div.innerHTML = `
+          <div>
+            <div class="item-name">${item.itemName}</div>
+            <div class="item-price">🪙 ${item.price} pt</div>
+          </div>
+          <button class="btn btn-buy" onclick="buyItem('${item.itemId}', ${item.price})">購入する</button>
+        `;
+        shopContainer.appendChild(div);
+      });
+
+      // 3. バッグ（所持アイテム）の描画
+      const bagContainer = document.getElementById("bagItemsContainer");
+      bagContainer.innerHTML = "";
+      if (ownedItems.length === 0) {
+        bagContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">バッグにアイテムがありません。<br>ショップで購入しよう！</div>';
       } else {
-        filteredShop.forEach(item => {
-          let isOwned = ownedItems.includes(item.itemId);
+        ownedItems.forEach((itemId, index) => {
+          let item = shopItems.find(s => s.itemId === itemId);
+          if (!item) return;
+
           let div = document.createElement("div");
           div.className = "item-card";
           div.innerHTML = `
-            <div class="item-name">${item.itemName}</div>
-            <div class="item-price">🪙 ${item.price} pt</div>
-            <button class="btn btn-buy" ${isOwned ? 'disabled style="background-color:#444; color:#777;"' : ''} onclick="buyItem('${item.itemId}', ${item.price})">
-              ${isOwned ? '所持済み' : '獲得する'}
-            </button>
+            <div>
+              <div class="item-name">${item.itemName}</div>
+            </div>
+            <button class="btn btn-use" onclick="useItem('${itemId}', ${index})">使用する（効果発動）</button>
           `;
-          shopContainer.appendChild(div);
+          bagContainer.appendChild(div);
         });
       }
     }
 
+    // アイテム購入（何度でも買える＝所持リストに追加される）
     function buyItem(itemId, price) {
       if (currentTrust < price) return alert("ポイントが足りません！");
-      if (!confirm(`本当に ${price} pt で獲得しますか？`)) return;
+      if (!confirm(`本当に ${price} pt で購入しますか？`)) return;
 
       fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=buyItem&param=${encodeURIComponent(itemId)}&subParam=${price}`)
         .then(res => res.json())
         .then(data => {
           if (data.error) return alert(data.error);
           currentTrust = data.trust;
-          ownedItems = data.owned ? data.owned.split(',') : [];
+          document.getElementById("userTrust").textContent = currentTrust;
+          ownedItems = data.owned ? data.owned.split(',').filter(Boolean) : [];
           updateUI();
-          alert("獲得しました！");
+          alert("アイテムを購入しました！バッグに追加されました。");
         });
     }
 
-    function toggleEquip(itemId, isRafau) {
-      let slot = isRafau ? 'rafau' : 'girl';
-      if (equippedItems[slot] === itemId) {
-        equippedItems[slot] = ""; 
-      } else {
-        equippedItems[slot] = itemId; 
-      }
+    // アイテム使用（使うとバッグから1つ消えて、効果が発動する＝消費型）
+    function useItem(itemId, index) {
+      let item = shopItems.find(s => s.itemId === itemId);
+      if (!confirm(`「${item.itemName}」を使用しますか？\n（※使うと消費されます）`)) return;
 
-      let saveString = `girl:${equippedItems.girl},rafau:${equippedItems.rafau}`;
-      fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(saveString)}`)
+      // バッグ（owned）から今回使った1個を排除する
+      ownedItems.splice(index, 1);
+      let newOwnedString = ownedItems.join(',');
+      activeEffectItemId = itemId; // 効果を有効化
+
+      // GASに「効果発動(equippedにセット)」と「バッグの更新(ownedから削除)」を送信
+      let saveString = `active:${activeEffectItemId}`;
+      fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(activeEffectItemId)}&subParam=${encodeURIComponent(newOwnedString)}`)
         .then(res => res.json())
-        .then(data => { if (data.success) updateUI(); });
+        .then(data => {
+          if (data.success) {
+            updateUI();
+            alert(`「${item.itemName}」の効果が発動しました！`);
+          }
+        });
+    }
+
+    // 効果を終了する（解除ボタン）
+    function clearEffect() {
+      if (!confirm("現在の効果を終了（解除）しますか？")) return;
+
+      activeEffectItemId = "";
+      fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent("")}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            updateUI();
+            alert("効果を解除しました。");
+          }
+        });
     }
   </script>
 </body>
