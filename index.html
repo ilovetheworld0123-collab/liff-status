@@ -18,8 +18,10 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* 直接編集できるテキストエリア */
-    .memo-textarea { width: 100%; height: 180px; padding: 12px; border-radius: 5px; border: 1px solid #444; background-color: #1e1e1e; color: #dcdcdc; font-size: 14px; box-sizing: border-box; resize: vertical; line-height: 1.5; }
+    /* メモ編集エリアの分割デザイン */
+    .memo-section { margin-bottom: 15px; }
+    .memo-section label { display: block; font-weight: bold; color: #4a90e2; margin-bottom: 5px; font-size: 14px; }
+    .memo-textarea { width: 100%; height: 80px; padding: 10px; border-radius: 5px; border: 1px solid #444; background-color: #1e1e1e; color: #dcdcdc; font-size: 14px; box-sizing: border-box; resize: vertical; line-height: 1.5; }
     
     /* 変更・削除履歴リスト */
     .memo-list { list-style: none; padding: 0; margin: 0; }
@@ -59,13 +61,29 @@
         <button class="tab-btn" onclick="switchTab('history')">変更履歴 (<span id="historyCount">0</span>)</button>
       </div>
 
-      <!-- タブ1：直接編集テキストエリア -->
+      <!-- タブ1：4項目に分かれた直接編集テキストエリア -->
       <div id="tab-active" class="tab-content active">
-        <textarea id="memoTextarea" class="memo-textarea" placeholder="ここに記憶メモが表示されます..."></textarea>
+        <div class="memo-section">
+          <label>👤 ユーザープロフィール</label>
+          <textarea id="userProfile" class="memo-textarea" placeholder="ユーザーの情報..."></textarea>
+        </div>
+        <div class="memo-section">
+          <label>👦 ラファウプロフィール</label>
+          <textarea id="rafauProfile" class="memo-textarea" placeholder="ラファウの状況や心情..."></textarea>
+        </div>
+        <div class="memo-section">
+          <label>📖 特別な思い出</label>
+          <textarea id="memories" class="memo-textarea" placeholder="過去の出来事や約束..."></textarea>
+        </div>
+        <div class="memo-section">
+          <label>📍 現在起きていること</label>
+          <textarea id="currentEvents" class="memo-textarea" placeholder="直近の状況..."></textarea>
+        </div>
+
         <button class="btn btn-save" onclick="saveMemo()">💾 変更を保存する</button>
       </div>
 
-      <!-- タブ2：変更したメモの履歴（直近5件） -->
+      <!-- タブ2：変更したメモの履歴 -->
       <div id="tab-history" class="tab-content">
         <ul class="memo-list" id="historyListContainer"></ul>
       </div>
@@ -111,6 +129,24 @@
       }
     }
 
+    // 🟢 GASから送られてきた合体テキストを4つに分解する関数
+    function populateTextareas(text) {
+      let userP = (text.match(/【ユーザープロフィール】\s*([\s\S]*?)(?=【ラファウプロフィール】|【特別な思い出】|【現在起きていること】|$)/) || ["", ""])[1].trim();
+      let rafauP = (text.match(/【ラファウプロフィール】\s*([\s\S]*?)(?=【ユーザープロフィール】|【特別な思い出】|【現在起きていること】|$)/) || ["", ""])[1].trim();
+      let mems = (text.match(/【特別な思い出】\s*([\s\S]*?)(?=【ユーザープロフィール】|【ラファウプロフィール】|【現在起きていること】|$)/) || ["", ""])[1].trim();
+      let curE = (text.match(/【現在起きていること】\s*([\s\S]*?)(?=【ユーザープロフィール】|【ラファウプロフィール】|【特別な思い出】|$)/) || ["", ""])[1].trim();
+      
+      // まだ4分割フォーマットになっていない古いデータ用
+      if (!userP && !rafauP && !mems && !curE) {
+        userP = text; 
+      }
+
+      document.getElementById("userProfile").value = userP === "記録なし" ? "" : userP;
+      document.getElementById("rafauProfile").value = rafauP === "記録なし" ? "" : rafauP;
+      document.getElementById("memories").value = mems === "記録なし" ? "" : mems;
+      document.getElementById("currentEvents").value = curE === "記録なし" ? "" : curE;
+    }
+
     function fetchData(action, newMemoParam = "") {
       document.getElementById("content").style.display = "none";
       document.getElementById("loading").style.display = "block";
@@ -118,7 +154,7 @@
 
       let url = GAS_API_URL + "?userId=" + myUserId + "&action=" + action;
       if (newMemoParam !== "") {
-        url += "&param=" + encodeURIComponent(newMemoParam);
+        url += "&param=" + encodeURIComponent(newMemoParam); // POSTではないためURLにパラメータをつなげる
       }
 
       fetch(url)
@@ -133,8 +169,8 @@
           document.getElementById("stageName").textContent = data.stage;
           document.getElementById("mood").textContent = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
 
-          // テキストエリアに流し込む
-          document.getElementById("memoTextarea").value = data.memo || "";
+          // テキストエリアに4分割して流し込む
+          populateTextareas(data.memo || "");
 
           // 履歴リストの描画
           renderHistory(data.history);
@@ -164,10 +200,17 @@
       document.getElementById("historyCount").textContent = historyArray.length;
     }
 
+    // 🟢 4つのテキストエリアの中身を合体させてGASに送信する
     function saveMemo() {
-      const updatedMemo = document.getElementById("memoTextarea").value.trim();
+      let userP = document.getElementById("userProfile").value.trim() || "記録なし";
+      let rafauP = document.getElementById("rafauProfile").value.trim() || "記録なし";
+      let mems = document.getElementById("memories").value.trim() || "記録なし";
+      let curE = document.getElementById("currentEvents").value.trim() || "記録なし";
+      
+      let combinedMemo = `【ユーザープロフィール】\n${userP}\n\n【ラファウプロフィール】\n${rafauP}\n\n【特別な思い出】\n${mems}\n\n【現在起きていること】\n${curE}`;
+
       if (!confirm("この内容でメモを保存しますか？")) return;
-      fetchData('updateMemo', updatedMemo);
+      fetchData('updateMemo', combinedMemo);
     }
   </script>
 </body>
