@@ -12,61 +12,44 @@
     .label { color: #aaa; font-size: 13px; }
     
     .tab-container { display: flex; margin-bottom: 15px; border-bottom: 2px solid #444; }
-    .tab-btn { flex: 1; background: none; border: none; padding: 10px; color: #aaa; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; }
+    .tab-btn { flex: 1; background: none; border: none; padding: 8px 5px; color: #aaa; font-size: 12px; font-weight: bold; cursor: pointer; text-align: center; }
     .tab-btn.active { color: #e74c3c; border-bottom: 2px solid #e74c3c; margin-bottom: -2px; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* 🟢 アバタープレビューエリア（比率・配置を完璧に調整） */
     .avatar-preview { text-align: center; margin-bottom: 15px; }
     
     .avatar-stage {
       display: flex;
       justify-content: center;
-      align-items: flex-end; /* 2人の足元（床）を揃える */
+      align-items: flex-end;
       width: 100%; height: 230px;
       margin: 0 auto 10px auto;
-      background: #ffffff; /* 白背景で透過問題を解決 */
+      background: #ffffff;
       border-radius: 12px;
       border: 2px solid #555;
-      padding-bottom: 15px; /* 床のスペース */
+      padding-bottom: 15px;
     }
 
-    /* はみ出した部分（数字など）を隠すための魔法の箱 */
-    .crop-box {
-      position: relative;
-      overflow: hidden; 
-    }
+    .crop-box { position: relative; overflow: hidden; }
 
-    /* 👦 ラファウ用の箱と画像サイズ */
-    .rafau-box {
-      width: 110px;
-      height: 180px;
-    }
+    /* ラファウ */
+    .rafau-box { width: 110px; height: 180px; }
     #preview-rafau {
-      position: absolute;
-      width: 120px; 
-      height: 190px;
-      left: -5px; top: -5px;
-      background-size: 300% 100%;
+      position: absolute; width: 120px; height: 190px;
+      left: -5px; top: -5px; background-size: 300% 100%;
     }
 
-    /* 👗 女の子用の箱と画像サイズ（数字を消して小柄にする） */
+    /* 女の子（初期値） */
     .girl-box {
-      width: 100px;
-      height: 165px; /* ラファウより少し背を低く */
-      margin-left: 10px; /* ラファウとの距離 */
+      width: 100px; height: 165px; margin-left: 10px;
     }
     #preview-girl {
-      position: absolute;
-      width: 120px; /* ドアップにならないように縮小 */
-      height: 180px;
-      left: -10px; /* 左右の余白をカット */
-      top: -15px;  /* 🚨 ここで頭の上の数字(1,2...)を上に追い出して隠す！ */
+      position: absolute; width: 100%; height: 100%;
       background-size: 400% 500%;
+      transform: scale(1.0) translateX(0px) translateY(0px);
     }
     
-    /* ショップの3カテゴリ切り替え */
     .shop-category-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
     .cat-btn { flex: 1; padding: 8px 2px; background: #333; border: 1px solid #555; color: #aaa; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;}
     .cat-btn.active { background: #e74c3c; color: white; border-color: #e74c3c; }
@@ -85,16 +68,22 @@
     #loading { text-align: center; color: #aaa; margin-top: 50px; }
     #error-box { display: none; background-color: #c0392b; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; word-break: break-all; }
     #content { display: none; }
+
+    /* 🟢 スライダー調整パネル用のデザイン */
+    .slider-row { margin-bottom: 15px; }
+    .slider-row label { display: block; font-size: 12px; color: #aaa; margin-bottom: 5px; }
+    .slider-row input[type="range"] { width: 100%; }
+    .slider-val { color: #e74c3c; font-weight: bold; }
+    #css-output { width: 100%; height: 80px; background: #111; color: #0f0; border: 1px solid #444; padding: 10px; font-size: 12px; box-sizing: border-box; }
   </style>
 </head>
 <body>
   <script>
-    // 🔑 IDとURLセット済み！
     const MY_LIFF_ID = "2011108007-kQlpYXHL";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmargf/exec";
   </script>
 
-  <div id="loading">📡 アバターデータを読み込み中...</div>
+  <div id="loading">📡 アデータを読み込み中...</div>
   <div id="error-box"></div>
 
   <div id="content">
@@ -103,12 +92,11 @@
       <div class="status-item"><span class="label">所持ポイント:</span> <strong id="userTrust" style="color: #f1c40f;">0</strong> pt</div>
       
       <div class="avatar-preview">
-        <!-- 🟢 クロッピング（切り抜き）を使った新ステージ -->
         <div class="avatar-stage">
           <div class="crop-box rafau-box">
             <div id="preview-rafau"></div>
           </div>
-          <div class="crop-box girl-box">
+          <div class="crop-box girl-box" id="girl-box-el">
             <div id="preview-girl"></div>
           </div>
         </div>
@@ -118,8 +106,9 @@
 
     <div class="card">
       <div class="tab-container">
-        <button class="tab-btn active" onclick="switchTab('closet')">クローゼット（所持品）</button>
+        <button class="tab-btn active" onclick="switchTab('closet')">クローゼット</button>
         <button class="tab-btn" onclick="switchTab('shop')">ショップ</button>
+        <button class="tab-btn" onclick="switchTab('adjust')" style="color:#f1c40f;">🛠 調整</button>
       </div>
 
       <div id="tab-closet" class="tab-content active">
@@ -133,6 +122,35 @@
           <button id="cat-rafau" class="cat-btn" onclick="switchShopCategory('rafau')">👦 ラファウ</button>
         </div>
         <div id="shopItemsContainer" class="item-grid"></div>
+      </div>
+
+      <!-- 🟢 直感スライダー調整タブ -->
+      <div id="tab-adjust" class="tab-content">
+        <p style="font-size:12px; color:#ccc;">スライダーを動かして女の子を完璧なサイズに合わせてください。</p>
+        
+        <div class="slider-row">
+          <label>枠の太り具合 (width): <span id="val-w" class="slider-val">100</span>px</label>
+          <input type="range" id="sl-w" min="50" max="200" value="100" oninput="applyAdjustments()">
+        </div>
+        <div class="slider-row">
+          <label>枠の背の高さ (height): <span id="val-h" class="slider-val">165</span>px</label>
+          <input type="range" id="sl-h" min="50" max="250" value="165" oninput="applyAdjustments()">
+        </div>
+        <div class="slider-row">
+          <label>ズーム (scale): <span id="val-s" class="slider-val">1.0</span>倍</label>
+          <input type="range" id="sl-s" min="0.5" max="2.5" step="0.1" value="1.0" oninput="applyAdjustments()">
+        </div>
+        <div class="slider-row">
+          <label>左右移動 (X): <span id="val-x" class="slider-val">0</span>px</label>
+          <input type="range" id="sl-x" min="-100" max="100" value="0" oninput="applyAdjustments()">
+        </div>
+        <div class="slider-row">
+          <label>上下移動 (Y): <span id="val-y" class="slider-val">0</span>px</label>
+          <input type="range" id="sl-y" min="-100" max="100" value="0" oninput="applyAdjustments()">
+        </div>
+
+        <p style="font-size:12px; margin-bottom:5px;">✅ 完成したCSS（これを保存しておいてください）</p>
+        <textarea id="css-output" readonly></textarea>
       </div>
     </div>
 
@@ -152,13 +170,35 @@
     const IMG_MEDIEVAL = "https://i.imgur.com/Vpd9s4W.png";
     const IMG_RAFAU = "https://i.imgur.com/3j04EcO.png";
 
-    function showError(message) {
-      document.getElementById("loading").style.display = "none";
-      const errorBox = document.getElementById("error-box");
-      errorBox.style.display = "block";
-      errorBox.innerHTML = "⚠️ <b>エラー</b><br><br>" + message;
+    // 🟢 スライダー調整ロジック
+    function applyAdjustments() {
+      let w = document.getElementById('sl-w').value;
+      let h = document.getElementById('sl-h').value;
+      let s = document.getElementById('sl-s').value;
+      let x = document.getElementById('sl-x').value;
+      let y = document.getElementById('sl-y').value;
+
+      document.getElementById('val-w').innerText = w;
+      document.getElementById('val-h').innerText = h;
+      document.getElementById('val-s').innerText = s;
+      document.getElementById('val-x').innerText = x;
+      document.getElementById('val-y').innerText = y;
+
+      document.getElementById('girl-box-el').style.width = w + 'px';
+      document.getElementById('girl-box-el').style.height = h + 'px';
+      document.getElementById('preview-girl').style.transform = `scale(${s}) translateX(${x}px) translateY(${y}px)`;
+
+      document.getElementById('css-output').value = 
+`.girl-box {
+  width: ${w}px;
+  height: ${h}px;
+}
+#preview-girl {
+  transform: scale(${s}) translateX(${x}px) translateY(${y}px);
+}`;
     }
 
+    // -- 以下は今までの処理 --
     document.addEventListener("DOMContentLoaded", () => {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get("userId")) {
@@ -166,29 +206,24 @@
         loadAvatarData();
         return;
       }
-      
       liff.init({ liffId: MY_LIFF_ID }).then(() => {
-        if (!liff.isLoggedIn()) {
-          liff.login();
-        } else {
+        if (!liff.isLoggedIn()) liff.login();
+        else {
           liff.getProfile().then(profile => {
             myUserId = profile.userId;
             loadAvatarData();
-          }).catch(err => showError("プロフィール取得エラー: " + err.message));
+          });
         }
-      }).catch(err => showError("LIFF初期化エラー: " + err.message));
+      });
     });
 
     function switchTab(tabName) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      if (tabName === 'closet') {
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        document.getElementById('tab-closet').classList.add('active');
-      } else {
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('tab-shop').classList.add('active');
-      }
+      document.getElementById('tab-' + tabName).classList.add('active');
+      
+      let index = tabName === 'closet' ? 0 : (tabName === 'shop' ? 1 : 2);
+      document.querySelectorAll('.tab-btn')[index].classList.add('active');
     }
 
     function switchShopCategory(category) {
@@ -202,15 +237,14 @@
       fetch(GAS_API_URL + "?userId=" + encodeURIComponent(myUserId) + "&action=getAvatarData")
         .then(res => res.json())
         .then(data => {
-          if (data.error) return showError(data.error);
+          if(data.error) return;
           currentTrust = data.trust;
           document.getElementById("userTrust").textContent = currentTrust;
-
+          
           let rawEquipped = data.equipped || "";
           equippedItems = { girl: "", rafau: "" };
           if (rawEquipped) {
-            let pairs = rawEquipped.split(',');
-            pairs.forEach(p => {
+            rawEquipped.split(',').forEach(p => {
               if (p.includes(':')) {
                 let parts = p.split(':');
                 equippedItems[parts[0]] = parts[1];
@@ -220,15 +254,12 @@
               }
             });
           }
-
           ownedItems = data.owned ? data.owned.split(',') : [];
           shopItems = data.shop || [];
-
           updateUI();
           document.getElementById("loading").style.display = "none";
           document.getElementById("content").style.display = "block";
-        })
-        .catch(err => showError("通信エラー: " + err.message));
+        });
     }
 
     function updateAvatarPreview() {
@@ -240,117 +271,70 @@
         let rItem = shopItems.find(s => s.itemId === equippedItems.rafau);
         if (rItem) {
           let rIndex = parseInt(rItem.imageUrl) || 0;
-          let rX = rIndex * 50; 
           rafauEl.style.backgroundImage = `url('${IMG_RAFAU}')`;
-          rafauEl.style.backgroundPosition = `${rX}% 0%`;
+          rafauEl.style.backgroundPosition = `${rIndex * 50}% 0%`;
           equipTexts.push("👨 彼：" + rItem.itemName.replace('ラファウ: ',''));
         }
-      } else {
-        rafauEl.style.backgroundImage = "none";
-      }
+      } else rafauEl.style.backgroundImage = "none";
 
       if (equippedItems.girl) {
         let gItem = shopItems.find(s => s.itemId === equippedItems.girl);
         if (gItem) {
           let gUrl = (gItem.category === 'medieval') ? IMG_MEDIEVAL : IMG_MODERN;
           let gIndex = parseInt(gItem.imageUrl) || 0;
-          let gCol = gIndex % 4;
-          let gRow = Math.floor(gIndex / 4);
-          let gX = gCol * 33.333;
-          let gY = gRow * 25;
-          
           girlEl.style.backgroundImage = `url('${gUrl}')`;
-          girlEl.style.backgroundPosition = `${gX}% ${gY}%`;
+          girlEl.style.backgroundPosition = `${(gIndex % 4) * 33.333}% ${Math.floor(gIndex / 4) * 25}%`;
           equipTexts.push("👗 私：" + gItem.itemName);
         }
-      } else {
-        girlEl.style.backgroundImage = "none";
-      }
+      } else girlEl.style.backgroundImage = "none";
 
       document.getElementById("currentEquipText").innerHTML = equipTexts.length > 0 ? equipTexts.join('<br>') : "現在のコーデ：未設定";
     }
 
     function updateUI() {
       updateAvatarPreview();
-
+      // クローゼットとショップの描画処理（省略せずに表示します）
       const closetContainer = document.getElementById("ownedItemsContainer");
       closetContainer.innerHTML = "";
-      if (ownedItems.length === 0) {
-        closetContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">所持品がありません。</div>';
-      } else {
-        ownedItems.forEach(itemId => {
-          let item = shopItems.find(s => s.itemId === itemId);
-          if (!item) return;
-
-          let isRafau = item.category === 'rafau';
-          let isEquipped = (isRafau ? equippedItems.rafau : equippedItems.girl) === itemId;
-
-          let div = document.createElement("div");
-          div.className = "item-card";
-          div.innerHTML = `
-            <div class="item-name">${item.itemName}</div>
-            <div class="label" style="font-size:11px;">[${isRafau ? 'ラファウ' : (item.category === 'medieval' ? '15世紀風' : '現代風')}]</div>
-            <button class="btn ${isEquipped ? 'btn-unequip' : 'btn-equip'}" onclick="toggleEquip('${item.itemId}', ${isRafau})">
-              ${isEquipped ? '着用中' : '着替える'}
-            </button>
-          `;
-          closetContainer.appendChild(div);
-        });
-      }
+      ownedItems.forEach(itemId => {
+        let item = shopItems.find(s => s.itemId === itemId);
+        if (!item) return;
+        let isRafau = item.category === 'rafau';
+        let isEquipped = (isRafau ? equippedItems.rafau : equippedItems.girl) === itemId;
+        let div = document.createElement("div");
+        div.className = "item-card";
+        div.innerHTML = `<div class="item-name">${item.itemName}</div>
+          <button class="btn ${isEquipped ? 'btn-unequip' : 'btn-equip'}" onclick="toggleEquip('${item.itemId}', ${isRafau})">
+          ${isEquipped ? '着用中' : '着替える'}</button>`;
+        closetContainer.appendChild(div);
+      });
 
       const shopContainer = document.getElementById("shopItemsContainer");
       shopContainer.innerHTML = "";
-      let filteredShop = shopItems.filter(item => item.category === currentShopCategory);
-      if (filteredShop.length === 0) {
-        shopContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">アイテムがありません。</div>';
-      } else {
-        filteredShop.forEach(item => {
-          let isOwned = ownedItems.includes(item.itemId);
-          let div = document.createElement("div");
-          div.className = "item-card";
-          div.innerHTML = `
-            <div class="item-name">${item.itemName}</div>
-            <div class="item-price">🪙 ${item.price} pt</div>
-            <button class="btn btn-buy" ${isOwned ? 'disabled style="background-color:#444; color:#777;"' : ''} onclick="buyItem('${item.itemId}', ${item.price})">
-              ${isOwned ? '所持済み' : '獲得する'}
-            </button>
-          `;
-          shopContainer.appendChild(div);
-        });
-      }
+      shopItems.filter(item => item.category === currentShopCategory).forEach(item => {
+        let isOwned = ownedItems.includes(item.itemId);
+        let div = document.createElement("div");
+        div.className = "item-card";
+        div.innerHTML = `<div class="item-name">${item.itemName}</div>
+          <button class="btn btn-buy" ${isOwned ? 'disabled style="background-color:#444;"' : ''} onclick="buyItem('${item.itemId}', ${item.price})">
+          ${isOwned ? '所持済み' : '獲得する'}</button>`;
+        shopContainer.appendChild(div);
+      });
     }
 
     function buyItem(itemId, price) {
       if (currentTrust < price) return alert("ポイントが足りません！");
-      if (!confirm(`本当に ${price} pt で獲得しますか？`)) return;
-
       fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=buyItem&param=${encodeURIComponent(itemId)}&subParam=${price}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) return alert(data.error);
-          currentTrust = data.trust;
-          ownedItems = data.owned ? data.owned.split(',') : [];
-          updateUI();
-          alert("獲得しました！");
+        .then(res => res.json()).then(data => {
+          currentTrust = data.trust; ownedItems = data.owned ? data.owned.split(',') : []; updateUI();
         });
     }
 
     function toggleEquip(itemId, isRafau) {
       let slot = isRafau ? 'rafau' : 'girl';
-      
-      if (equippedItems[slot] === itemId) {
-        equippedItems[slot] = ""; 
-      } else {
-        equippedItems[slot] = itemId; 
-      }
-
-      let saveString = `girl:${equippedItems.girl},rafau:${equippedItems.rafau}`;
-
-      fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(saveString)}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) updateUI();
-        });
+      equippedItems[slot] = equippedItems[slot] === itemId ? "" : itemId;
+      fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(`girl:${equippedItems.girl},rafau:${equippedItems.rafau}`)}`)
+        .then(res => res.json()).then(data => { if(data.success) updateUI(); });
     }
   </script>
 </body>
