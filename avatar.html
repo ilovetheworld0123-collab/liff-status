@@ -17,7 +17,6 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* 現在有効な効果の表示エリア */
     .active-effect-box { background: #1e1e1e; border: 1px solid #e74c3c; border-radius: 6px; padding: 12px; margin-bottom: 15px; text-align: center; }
     
     .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 5px; }
@@ -51,7 +50,6 @@
       <h2>🍷 特殊アイテム・効果管理</h2>
       <div class="status-item"><span class="label">所持ポイント:</span> <strong id="userTrust" style="color: #f1c40f;">0</strong> pt</div>
       
-      <!-- 現在の効果表示 ＆ 解除ボタン -->
       <div class="active-effect-box">
         <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">現在の有効な効果：</div>
         <div id="activeEffectText" style="font-size: 14px; font-weight: bold; color: #2ecc71; margin-bottom: 10px;">なし（通常状態）</div>
@@ -70,7 +68,7 @@
         <div id="shopItemsContainer" class="item-grid"></div>
       </div>
 
-      <!-- バッグタブ（所持品一覧・使用する） -->
+      <!-- バッグタブ -->
       <div id="tab-bag" class="tab-content">
         <div id="bagItemsContainer" class="item-grid"></div>
       </div>
@@ -151,7 +149,7 @@
         clearBtnEl.style.display = "none";
       }
 
-      // ショップの描画（説明文を追加）
+      // ショップの描画（説明文対応）
       const shopContainer = document.getElementById("shopItemsContainer");
       shopContainer.innerHTML = "";
       shopItems.forEach(item => {
@@ -168,7 +166,7 @@
         shopContainer.appendChild(div);
       });
 
-      // バッグの描画
+      // バッグの描画（説明文対応）
       const bagContainer = document.getElementById("bagItemsContainer");
       bagContainer.innerHTML = "";
       if (ownedItems.length === 0) {
