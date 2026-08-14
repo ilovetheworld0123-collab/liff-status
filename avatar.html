@@ -17,32 +17,53 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* 🟢 アバタープレビューエリア（白背景にして透過問題を解決 ＆ 2人並べる） */
+    /* 🟢 アバタープレビューエリア（比率・配置を完璧に調整） */
     .avatar-preview { text-align: center; margin-bottom: 15px; }
+    
     .avatar-stage {
       display: flex;
       justify-content: center;
-      align-items: center;
-      width: 100%; height: 220px;
+      align-items: flex-end; /* 2人の足元（床）を揃える */
+      width: 100%; height: 230px;
       margin: 0 auto 10px auto;
-      background: #ffffff; /* 白背景で画像と同化させる */
+      background: #ffffff; /* 白背景で透過問題を解決 */
       border-radius: 12px;
-      overflow: hidden;
       border: 2px solid #555;
+      padding-bottom: 15px; /* 床のスペース */
     }
-    .char-slot {
-      width: 110px; height: 180px;
-      background-repeat: no-repeat;
+
+    /* はみ出した部分（数字など）を隠すための魔法の箱 */
+    .crop-box {
+      position: relative;
+      overflow: hidden; 
     }
-    /* ラファウの切り抜き設定（3列） */
+
+    /* 👦 ラファウ用の箱と画像サイズ */
+    .rafau-box {
+      width: 110px;
+      height: 180px;
+    }
     #preview-rafau {
-      background-size: 300% auto;
-      transform: scale(1.05) translateY(10px);
+      position: absolute;
+      width: 120px; 
+      height: 190px;
+      left: -5px; top: -5px;
+      background-size: 300% 100%;
     }
-    /* 女の子の切り抜き設定（4列×5行＋番号消しズーム） */
+
+    /* 👗 女の子用の箱と画像サイズ（数字を消して小柄にする） */
+    .girl-box {
+      width: 100px;
+      height: 165px; /* ラファウより少し背を低く */
+      margin-left: 10px; /* ラファウとの距離 */
+    }
     #preview-girl {
+      position: absolute;
+      width: 120px; /* ドアップにならないように縮小 */
+      height: 180px;
+      left: -10px; /* 左右の余白をカット */
+      top: -15px;  /* 🚨 ここで頭の上の数字(1,2...)を上に追い出して隠す！ */
       background-size: 400% 500%;
-      transform: scale(1.15) translateY(15px); /* 番号を上に追い出し、顔を少し下げる */
     }
     
     /* ショップの3カテゴリ切り替え */
@@ -69,8 +90,8 @@
 <body>
   <script>
     // 🔑 ここをあなたのIDとURLに書き換えてください！
-     const MY_LIFF_ID = "2011108007-kQlpYXHL";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec"
+    const MY_LIFF_ID = "YOUR_LIFF_ID";
+    const GAS_API_URL = "YOUR_GAS_API_URL";
   </script>
 
   <div id="loading">📡 アバターデータを読み込み中...</div>
@@ -82,12 +103,16 @@
       <div class="status-item"><span class="label">所持ポイント:</span> <strong id="userTrust" style="color: #f1c40f;">0</strong> pt</div>
       
       <div class="avatar-preview">
-        <!-- 🟢 2人並ぶ白背景のステージ -->
+        <!-- 🟢 クロッピング（切り抜き）を使った新ステージ -->
         <div class="avatar-stage">
-          <div id="preview-rafau" class="char-slot"></div>
-          <div id="preview-girl" class="char-slot"></div>
+          <div class="crop-box rafau-box">
+            <div id="preview-rafau"></div>
+          </div>
+          <div class="crop-box girl-box">
+            <div id="preview-girl"></div>
+          </div>
         </div>
-        <div id="currentEquipText" style="font-size: 12px; color: #aaa;"></div>
+        <div id="currentEquipText" style="font-size: 12px; color: #aaa; line-height: 1.5; margin-top: 5px;"></div>
       </div>
     </div>
 
@@ -102,7 +127,6 @@
       </div>
 
       <div id="tab-shop" class="tab-content">
-        <!-- 🟢 ラファウのタブを追加 -->
         <div class="shop-category-tabs">
           <button id="cat-modern" class="cat-btn active" onclick="switchShopCategory('modern')">👗 現代風</button>
           <button id="cat-medieval" class="cat-btn" onclick="switchShopCategory('medieval')">🛡️ 15世紀</button>
@@ -119,7 +143,6 @@
   <script>
     let myUserId = "";
     let currentTrust = 0;
-    // 🟢 2人の装備を別々に管理する
     let equippedItems = { girl: "", rafau: "" }; 
     let ownedItems = [];     
     let shopItems = [];      
@@ -182,7 +205,6 @@
           currentTrust = data.trust;
           document.getElementById("userTrust").textContent = currentTrust;
 
-          // 🟢 girl:m1,rafau:r2 のような形式で両方の装備を読み込む
           let rawEquipped = data.equipped || "";
           equippedItems = { girl: "", rafau: "" };
           if (rawEquipped) {
@@ -192,7 +214,6 @@
                 let parts = p.split(':');
                 equippedItems[parts[0]] = parts[1];
               } else {
-                // 古いデータへの対応（girlに入れる）
                 if(p.startsWith('r')) equippedItems.rafau = p;
                 else equippedItems.girl = p;
               }
@@ -214,21 +235,19 @@
       const rafauEl = document.getElementById("preview-rafau");
       let equipTexts = [];
 
-      // ラファウの表示
       if (equippedItems.rafau) {
         let rItem = shopItems.find(s => s.itemId === equippedItems.rafau);
         if (rItem) {
           let rIndex = parseInt(rItem.imageUrl) || 0;
-          let rX = rIndex * 50; // 3列なので0%, 50%, 100%
+          let rX = rIndex * 50; 
           rafauEl.style.backgroundImage = `url('${IMG_RAFAU}')`;
           rafauEl.style.backgroundPosition = `${rX}% 0%`;
-          equipTexts.push("彼:" + rItem.itemName.replace('ラファウ: ',''));
+          equipTexts.push("👨 彼：" + rItem.itemName.replace('ラファウ: ',''));
         }
       } else {
         rafauEl.style.backgroundImage = "none";
       }
 
-      // 女の子の表示
       if (equippedItems.girl) {
         let gItem = shopItems.find(s => s.itemId === equippedItems.girl);
         if (gItem) {
@@ -241,7 +260,7 @@
           
           girlEl.style.backgroundImage = `url('${gUrl}')`;
           girlEl.style.backgroundPosition = `${gX}% ${gY}%`;
-          equipTexts.push("私:" + gItem.itemName);
+          equipTexts.push("👗 私：" + gItem.itemName);
         }
       } else {
         girlEl.style.backgroundImage = "none";
@@ -318,14 +337,12 @@
     function toggleEquip(itemId, isRafau) {
       let slot = isRafau ? 'rafau' : 'girl';
       
-      // 着脱の切り替え
       if (equippedItems[slot] === itemId) {
         equippedItems[slot] = ""; 
       } else {
         equippedItems[slot] = itemId; 
       }
 
-      // 🟢 GASに "girl:m1,rafau:r2" の形で保存する
       let saveString = `girl:${equippedItems.girl},rafau:${equippedItems.rafau}`;
 
       fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(saveString)}`)
