@@ -26,7 +26,10 @@
     .status-item { margin: 5px 0; font-size: 15px; }
     .status-item span { font-weight: bold; color: #2980b9; }
 
-    /* 🟢 タブ切り替え用のデザイン */
+    .control-box { background: #fdf2e9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
+    .control-box select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+
+    /* タブ切り替え */
     .tabs {
       display: flex;
       flex-wrap: wrap;
@@ -53,10 +56,10 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* 🟢 リッチテキストエディタのデザイン */
+    /* エディタ */
     .editor {
       width: 100%;
-      height: 200px;
+      height: 180px;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -70,13 +73,15 @@
     .editor:focus { border-color: #2980b9; background-color: #fff; }
 
     .btn {
-      display: block; width: 100%; padding: 12px; margin-top: 15px; border: none;
-      border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.3s;
+      display: block; width: 100%; padding: 12px; margin-top: 10px; border: none;
+      border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.3s;
     }
     .btn-save { background-color: #27ae60; color: white; }
     .btn-save:hover { background-color: #219150; }
-    .btn-complement { background-color: #8e44ad; color: white; margin-top: 10px; }
+    .btn-complement { background-color: #8e44ad; color: white; }
     .btn-complement:hover { background-color: #732d91; }
+    .btn-clean { background-color: #d35400; color: white; }
+    .btn-clean:hover { background-color: #ba4a00; }
     .btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
     #loading { text-align: center; font-weight: bold; color: #e67e22; display: none; margin-top: 15px; }
   </style>
@@ -93,8 +98,16 @@
       <div class="status-item">🎭 機嫌: <span id="moodState">読込中...</span></div>
     </div>
 
+    <!-- 🟢 参照するヒストリー（シート）を選ぶコントロール -->
+    <div class="control-box">
+      <label for="sheetSelect">📂 <b>補完で読み込む会話シートを選択:</b></label>
+      <select id="sheetSelect">
+        <option value="History">History (直近の最新)</option>
+      </select>
+    </div>
+
     <h3>📝 共有記憶（メモ）</h3>
-    <p style="font-size: 12px; color: #7f8c8d; margin-top: 0;">直接編集可能です。補完後の追加部分は赤字になります。</p>
+    <p style="font-size: 12px; color: #7f8c8d; margin-top: 0;">直接編集可能です。追加・変更部分は赤字になります。</p>
 
     <!-- タブボタン -->
     <div class="tabs">
@@ -104,31 +117,28 @@
       <button class="tab-btn" onclick="switchTab('tab4', this)">現在地</button>
     </div>
 
-    <!-- 各タブの中身（直接編集できるエディタ） -->
+    <!-- 各タブの中身 -->
     <div id="tab1" class="tab-content active"><div id="editor-user" class="editor" contenteditable="true">読込中...</div></div>
     <div id="tab2" class="tab-content"><div id="editor-rafau" class="editor" contenteditable="true">読込中...</div></div>
     <div id="tab3" class="tab-content"><div id="editor-mems" class="editor" contenteditable="true">読込中...</div></div>
     <div id="tab4" class="tab-content"><div id="editor-curE" class="editor" contenteditable="true">読込中...</div></div>
     
     <button id="saveBtn" class="btn btn-save" onclick="saveMemo()">手動でメモを上書き保存 💾</button>
-    <button id="complementBtn" class="btn btn-complement" onclick="complementMemo()">過去の会話から記憶を補完する ✨</button>
+    <button id="complementBtn" class="btn btn-complement" onclick="complementMemo()">選択したシートから記憶を補完する ✨</button>
+    <button id="cleanBtn" class="btn btn-clean" onclick="cleanMemo()">メモの重複項目の整理・統合を行う 🧹</button>
     
-    <div id="loading">処理中です。すべてのアーカイブから記憶を整理しています... ⏳</div>
+    <div id="loading">処理中です。しばらくお待ちください... ⏳</div>
   </div>
 
   <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    // ==========================================
-    // 🔑 設定
-    // ==========================================
     const LIFF_ID = "2011085090-Y3VoNpnw"; 
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec";
     
     let currentUserId = "";
-    let currentMemoData = { userP: "", rafauP: "", mems: "", curE: "" }; // 比較用保存データ
+    let currentMemoData = { userP: "", rafauP: "", mems: "", curE: "" };
 
-    // LIFF初期化
     liff.init({ liffId: LIFF_ID })
       .then(() => {
         if (!liff.isLoggedIn()) {
@@ -142,7 +152,6 @@
       })
       .catch(err => { alert("LIFFの初期化に失敗しました。"); });
 
-    // 🟢 タブ切り替え処理
     function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -150,7 +159,6 @@
       btnElement.classList.add('active');
     }
 
-    // 🟢 メモを4つの項目に分解する関数（JS版・バックエンドと完全同期）
     function parseMemoClient(text) {
       let userP = (text.match(/【ユーザープロフィール】\s*([\s\S]*?)(?=【ラファウプロフィール】|【特別な思い出】|【現在起きていること】|$)/) || ["", ""])[1].trim();
       let rafauP = (text.match(/【ラファウプロフィール】\s*([\s\S]*?)(?=【ユーザープロフィール】|【特別な思い出】|【現在起きていること】|$)/) || ["", ""])[1].trim();
@@ -159,11 +167,9 @@
       return { userP, rafauP, mems, curE };
     }
 
-    // 🟢 古いメモと新しいメモを比較して、新しい行を赤文字タグ（span）で囲む関数
     function highlightDiff(oldText, newText) {
       const oldLines = oldText.split('\n').map(l => l.trim()).filter(l => l);
       const newLines = newText.split('\n');
-      
       return newLines.map(line => {
         const trimmed = line.trim();
         if (trimmed && !oldLines.includes(trimmed)) {
@@ -173,11 +179,26 @@
       }).join('');
     }
 
-    // データ取得（ステータス＆メモ）
     function fetchData() {
       fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) 
         .then(response => response.json())
-        .then(data => { if(data.error) throw new Error(data.error); return fetch(`${GAS_URL}?userId=${currentUserId}`); })
+        .then(data => {
+          if(data.error) throw new Error(data.error);
+          
+          // シート一覧のプルダウンを動的に生成
+          if(data.sheets && data.sheets.length > 0) {
+            const select = document.getElementById('sheetSelect');
+            select.innerHTML = "";
+            data.sheets.forEach(sheetName => {
+              let opt = document.createElement('option');
+              opt.value = sheetName;
+              opt.innerText = sheetName === 'History' ? 'History (直近の最新)' : sheetName + ' (過去のアーカイブ)';
+              select.appendChild(opt);
+            });
+          }
+
+          return fetch(`${GAS_URL}?userId=${currentUserId}`);
+        })
         .then(response => response.json())
         .then(data => {
           document.getElementById('userName').innerText = data.name || "名無し";
@@ -185,7 +206,6 @@
           document.getElementById('stageName').innerText = data.stage;
           document.getElementById('moodState').innerText = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
           
-          // メモをパースして各タブのエディタに割り当て
           currentMemoData = parseMemoClient(data.memo);
           document.getElementById('editor-user').innerText = currentMemoData.userP;
           document.getElementById('editor-rafau').innerText = currentMemoData.rafauP;
@@ -195,7 +215,6 @@
         .catch(error => { alert("データの読み込みに失敗しました。"); });
     }
 
-    // 手動でのメモ保存処理
     function saveMemo() {
       const btn = document.getElementById('saveBtn');
       btn.innerText = "保存中... ⏳"; btn.disabled = true;
@@ -210,58 +229,90 @@
       fetch(`${GAS_URL}?userId=${currentUserId}&action=updateMemo&param=${encodeURIComponent(newFullMemo)}`)
         .then(response => response.json())
         .then(data => {
-          alert("メモを手動保存しました！（重複の整理や赤文字も通常の色として保存されました）");
-          
+          alert("メモを手動保存しました！");
           currentMemoData = parseMemoClient(newFullMemo);
           document.getElementById('editor-user').innerText = currentMemoData.userP;
           document.getElementById('editor-rafau').innerText = currentMemoData.rafauP;
           document.getElementById('editor-mems').innerText = currentMemoData.mems;
           document.getElementById('editor-curE').innerText = currentMemoData.curE;
-
           btn.innerText = "手動でメモを上書き保存 💾"; btn.disabled = false;
         })
         .catch(err => { alert("保存エラー"); btn.innerText = "手動でメモを上書き保存 💾"; btn.disabled = false; });
     }
 
-    // 過去のすべてのアーカイブから記憶を補完する処理（重複削除＆差分赤文字）
+    // 選択したシートの履歴から補完する
     function complementMemo() {
-      const isConfirm = confirm("全アーカイブを含む過去の会話履歴をAIが読み込み、重複を綺麗に統合・整理した上で不足している記憶を補完します。少し時間がかかりますが実行しますか？");
+      const selectedSheet = document.getElementById('sheetSelect').value;
+      const isConfirm = confirm(`「${selectedSheet}」の会話履歴を読み込んでメモを補完します。実行しますか？`);
       if(!isConfirm) return;
 
       const btn = document.getElementById('complementBtn');
+      const cleanBtn = document.getElementById('cleanBtn');
       const saveBtn = document.getElementById('saveBtn');
       const loading = document.getElementById('loading');
       
-      btn.disabled = true; saveBtn.disabled = true;
-      btn.style.backgroundColor = "#95a5a6";
+      btn.disabled = true; cleanBtn.disabled = true; saveBtn.disabled = true;
       loading.style.display = "block";
 
-      fetch(`${GAS_URL}?userId=${currentUserId}&action=complementMemo`)
+      fetch(`${GAS_URL}?userId=${currentUserId}&action=complementMemo&param=${encodeURIComponent(selectedSheet)}`)
         .then(response => response.json())
         .then(data => {
           loading.style.display = "none";
-          btn.disabled = false; saveBtn.disabled = false;
-          btn.style.backgroundColor = "#8e44ad";
+          btn.disabled = false; cleanBtn.disabled = false; saveBtn.disabled = false;
 
           if(data.error) {
             alert("エラー: " + data.error);
           } else if(data.success) {
             const newMemoData = parseMemoClient(data.memo);
-            
             document.getElementById('editor-user').innerHTML = highlightDiff(currentMemoData.userP, newMemoData.userP);
             document.getElementById('editor-rafau').innerHTML = highlightDiff(currentMemoData.rafauP, newMemoData.rafauP);
             document.getElementById('editor-mems').innerHTML = highlightDiff(currentMemoData.mems, newMemoData.mems);
             document.getElementById('editor-curE').innerHTML = highlightDiff(currentMemoData.curE, newMemoData.curE);
-
             currentMemoData = newMemoData;
-
-            alert("✨ 記憶の補完と重複整理が完了しました！\n\nAIが新しく追加・整理した情報が『赤文字』で表示されています。各タブを確認して、問題なければ【手動でメモを上書き保存】を押してください。");
+            alert("✨ 記憶の補完が完了しました！赤字部分を確認して保存してください。");
           }
         })
         .catch(err => {
           loading.style.display = "none";
-          btn.disabled = false; saveBtn.disabled = false;
-          btn.style.backgroundColor = "#8e44ad";
+          btn.disabled = false; cleanBtn.disabled = false; saveBtn.disabled = false;
+          alert("通信エラーが発生しました。");
+        });
+    }
+
+    // 重複項目の整理・統合専用ボタンの処理
+    function cleanMemo() {
+      const isConfirm = confirm("現在のメモにある重複項目や似たような記述を綺麗に整理・統合します。実行しますか？");
+      if(!isConfirm) return;
+
+      const btn = document.getElementById('complementBtn');
+      const cleanBtn = document.getElementById('cleanBtn');
+      const saveBtn = document.getElementById('saveBtn');
+      const loading = document.getElementById('loading');
+      
+      btn.disabled = true; cleanBtn.disabled = true; saveBtn.disabled = true;
+      loading.style.display = "block";
+
+      fetch(`${GAS_URL}?userId=${currentUserId}&action=cleanMemo`)
+        .then(response => response.json())
+        .then(data => {
+          loading.style.display = "none";
+          btn.disabled = false; cleanBtn.disabled = false; saveBtn.disabled = false;
+
+          if(data.error) {
+            alert("エラー: " + data.error);
+          } else if(data.success) {
+            const newMemoData = parseMemoClient(data.memo);
+            document.getElementById('editor-user').innerHTML = highlightDiff(currentMemoData.userP, newMemoData.userP);
+            document.getElementById('editor-rafau').innerHTML = highlightDiff(currentMemoData.rafauP, newMemoData.rafauP);
+            document.getElementById('editor-mems').innerHTML = highlightDiff(currentMemoData.mems, newMemoData.mems);
+            document.getElementById('editor-curE').innerHTML = highlightDiff(currentMemoData.curE, newMemoData.curE);
+            currentMemoData = newMemoData;
+            alert("🧹 重複項目の整理・統合が完了しました！内容を確認して保存してください。");
+          }
+        })
+        .catch(err => {
+          loading.style.display = "none";
+          btn.disabled = false; cleanBtn.disabled = false; saveBtn.disabled = false;
           alert("通信エラーが発生しました。");
         });
     }
