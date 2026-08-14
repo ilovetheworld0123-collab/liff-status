@@ -8,8 +8,8 @@
     body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a1a; color: #f0f0f0; padding: 20px; box-sizing: border-box; }
     .card { background-color: #2c2c2c; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 5px solid #e74c3c; }
     h2 { margin-top: 0; color: #e74c3c; font-size: 18px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-    .status-item { margin: 10px 0; font-size: 16px; }
-    .label { color: #aaa; font-size: 14px; }
+    .status-item { margin: 10px 0; font-size: 15px; }
+    .label { color: #aaa; font-size: 13px; }
     
     .tab-container { display: flex; margin-bottom: 15px; border-bottom: 2px solid #444; }
     .tab-btn { flex: 1; background: none; border: none; padding: 10px; color: #aaa; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; }
@@ -17,26 +17,37 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* 🟢 アバタープレビューエリア（大きく表示） */
-    .avatar-preview { text-align: center; background-color: #1e1e1e; padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px; }
+    /* 🟢 アバタープレビューエリア（白背景にして透過問題を解決 ＆ 2人並べる） */
+    .avatar-preview { text-align: center; margin-bottom: 15px; }
     .avatar-stage {
-      position: relative;
-      width: 150px; height: 200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%; height: 220px;
       margin: 0 auto 10px auto;
-      background: #111;
-      border-radius: 6px;
+      background: #ffffff; /* 白背景で画像と同化させる */
+      border-radius: 12px;
       overflow: hidden;
-      border: 1px solid #555;
+      border: 2px solid #555;
     }
-    #preview-girl {
-      position: absolute;
-      width: 100%; height: 100%;
-      background-size: 400% 500%;
+    .char-slot {
+      width: 110px; height: 180px;
       background-repeat: no-repeat;
     }
+    /* ラファウの切り抜き設定（3列） */
+    #preview-rafau {
+      background-size: 300% auto;
+      transform: scale(1.05) translateY(10px);
+    }
+    /* 女の子の切り抜き設定（4列×5行＋番号消しズーム） */
+    #preview-girl {
+      background-size: 400% 500%;
+      transform: scale(1.15) translateY(15px); /* 番号を上に追い出し、顔を少し下げる */
+    }
     
+    /* ショップの3カテゴリ切り替え */
     .shop-category-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
-    .cat-btn { flex: 1; padding: 6px; background: #333; border: 1px solid #555; color: #aaa; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .cat-btn { flex: 1; padding: 8px 2px; background: #333; border: 1px solid #555; color: #aaa; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;}
     .cat-btn.active { background: #e74c3c; color: white; border-color: #e74c3c; }
 
     .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 5px; }
@@ -57,8 +68,9 @@
 </head>
 <body>
   <script>
-    const MY_LIFF_ID = "2011108007-kQlpYXHL";
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec";
+    // 🔑 ここをあなたのIDとURLに書き換えてください！
+     const MY_LIFF_ID = "2011108007-kQlpYXHL";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwY-IBRG0C6Bn9RxsyWlMGpm0j43_8ap5pEeIOAMYNZvObbNkh4e0C88z4WPJmiRIGf/exec"
   </script>
 
   <div id="loading">📡 アバターデータを読み込み中...</div>
@@ -67,13 +79,15 @@
   <div id="content">
     <div class="card">
       <h2>👤 マイアバター</h2>
-      <div class="status-item"><span class="label">所持ポイント（好感度）:</span> <strong id="userTrust" style="color: #f1c40f;">0</strong> pt</div>
+      <div class="status-item"><span class="label">所持ポイント:</span> <strong id="userTrust" style="color: #f1c40f;">0</strong> pt</div>
       
       <div class="avatar-preview">
+        <!-- 🟢 2人並ぶ白背景のステージ -->
         <div class="avatar-stage">
-          <div id="preview-girl"></div>
+          <div id="preview-rafau" class="char-slot"></div>
+          <div id="preview-girl" class="char-slot"></div>
         </div>
-        <div id="currentEquipText" style="font-size: 13px; color: #aaa;">現在のコーデ：なし</div>
+        <div id="currentEquipText" style="font-size: 12px; color: #aaa;"></div>
       </div>
     </div>
 
@@ -88,9 +102,11 @@
       </div>
 
       <div id="tab-shop" class="tab-content">
+        <!-- 🟢 ラファウのタブを追加 -->
         <div class="shop-category-tabs">
-          <button id="cat-modern" class="cat-btn active" onclick="switchShopCategory('modern')">👗 現代風コーデ</button>
-          <button id="cat-medieval" class="cat-btn" onclick="switchShopCategory('medieval')">🛡️ 15世紀風</button>
+          <button id="cat-modern" class="cat-btn active" onclick="switchShopCategory('modern')">👗 現代風</button>
+          <button id="cat-medieval" class="cat-btn" onclick="switchShopCategory('medieval')">🛡️ 15世紀</button>
+          <button id="cat-rafau" class="cat-btn" onclick="switchShopCategory('rafau')">👦 ラファウ</button>
         </div>
         <div id="shopItemsContainer" class="item-grid"></div>
       </div>
@@ -103,13 +119,15 @@
   <script>
     let myUserId = "";
     let currentTrust = 0;
-    let equippedItemId = ""; 
+    // 🟢 2人の装備を別々に管理する
+    let equippedItems = { girl: "", rafau: "" }; 
     let ownedItems = [];     
     let shopItems = [];      
     let currentShopCategory = 'modern'; 
 
     const IMG_MODERN = "https://i.imgur.com/gwU0Lcc.png";
     const IMG_MEDIEVAL = "https://i.imgur.com/Vpd9s4W.png";
+    const IMG_RAFAU = "https://i.imgur.com/3j04EcO.png";
 
     function showError(message) {
       document.getElementById("loading").style.display = "none";
@@ -125,27 +143,21 @@
         loadAvatarData();
         return;
       }
-
       liff.init({ liffId: MY_LIFF_ID }).then(() => {
         if (!liff.isLoggedIn()) {
           liff.login();
         } else {
           liff.getProfile().then(profile => {
             myUserId = profile.userId;
-            if (!myUserId) {
-              showError("ユーザーIDが取得できませんでした。");
-              return;
-            }
             loadAvatarData();
-          }).catch(err => showError("プロフィール取得エラー: " + err.message));
+          });
         }
-      }).catch(err => showError("LIFF初期化エラー: " + err.message));
+      });
     });
 
     function switchTab(tabName) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
       if (tabName === 'closet') {
         document.querySelectorAll('.tab-btn')[0].classList.add('active');
         document.getElementById('tab-closet').classList.add('active');
@@ -157,34 +169,34 @@
 
     function switchShopCategory(category) {
       currentShopCategory = category;
-      if(category === 'modern') {
-        document.getElementById('cat-modern').classList.add('active');
-        document.getElementById('cat-medieval').classList.remove('active');
-      } else {
-        document.getElementById('cat-medieval').classList.add('active');
-        document.getElementById('cat-modern').classList.remove('active');
-      }
+      document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('cat-' + category).classList.add('active');
       updateUI();
     }
 
     function loadAvatarData() {
-      let url = GAS_API_URL + "?userId=" + encodeURIComponent(myUserId) + "&action=getAvatarData";
-      fetch(url)
+      fetch(GAS_API_URL + "?userId=" + encodeURIComponent(myUserId) + "&action=getAvatarData")
         .then(res => res.json())
         .then(data => {
-          if (data.error) {
-            showError(data.error);
-            return;
-          }
+          if (data.error) return showError(data.error);
           currentTrust = data.trust;
           document.getElementById("userTrust").textContent = currentTrust;
 
-          // 🟢 古いデータ形式（modern:m1 など）でも後ろの itemId (m1) を抽出できるように修正
+          // 🟢 girl:m1,rafau:r2 のような形式で両方の装備を読み込む
           let rawEquipped = data.equipped || "";
-          if (rawEquipped.includes(':')) {
-            equippedItemId = rawEquipped.split(':')[1]; // "modern:m1" なら "m1" を取り出す
-          } else {
-            equippedItemId = rawEquipped;
+          equippedItems = { girl: "", rafau: "" };
+          if (rawEquipped) {
+            let pairs = rawEquipped.split(',');
+            pairs.forEach(p => {
+              if (p.includes(':')) {
+                let parts = p.split(':');
+                equippedItems[parts[0]] = parts[1];
+              } else {
+                // 古いデータへの対応（girlに入れる）
+                if(p.startsWith('r')) equippedItems.rafau = p;
+                else equippedItems.girl = p;
+              }
+            });
           }
 
           ownedItems = data.owned ? data.owned.split(',') : [];
@@ -194,35 +206,48 @@
           document.getElementById("loading").style.display = "none";
           document.getElementById("content").style.display = "block";
         })
-        .catch(err => showError("データ通信エラー: " + err.message));
+        .catch(err => showError("通信エラー"));
     }
 
     function updateAvatarPreview() {
-      const previewEl = document.getElementById("preview-girl");
-      if (!equippedItemId) {
-        previewEl.style.backgroundImage = "none";
-        document.getElementById("currentEquipText").textContent = "現在のコーデ：未設定";
-        return;
+      const girlEl = document.getElementById("preview-girl");
+      const rafauEl = document.getElementById("preview-rafau");
+      let equipTexts = [];
+
+      // ラファウの表示
+      if (equippedItems.rafau) {
+        let rItem = shopItems.find(s => s.itemId === equippedItems.rafau);
+        if (rItem) {
+          let rIndex = parseInt(rItem.imageUrl) || 0;
+          let rX = rIndex * 50; // 3列なので0%, 50%, 100%
+          rafauEl.style.backgroundImage = `url('${IMG_RAFAU}')`;
+          rafauEl.style.backgroundPosition = `${rX}% 0%`;
+          equipTexts.push("彼:" + rItem.itemName.replace('ラファウ: ',''));
+        }
+      } else {
+        rafauEl.style.backgroundImage = "none";
       }
 
-      let item = shopItems.find(s => s.itemId === equippedItemId);
-      if (!item) {
-        previewEl.style.backgroundImage = "none";
-        document.getElementById("currentEquipText").textContent = "現在のコーデ：不明 (" + equippedItemId + ")";
-        return;
+      // 女の子の表示
+      if (equippedItems.girl) {
+        let gItem = shopItems.find(s => s.itemId === equippedItems.girl);
+        if (gItem) {
+          let gUrl = (gItem.category === 'medieval') ? IMG_MEDIEVAL : IMG_MODERN;
+          let gIndex = parseInt(gItem.imageUrl) || 0;
+          let gCol = gIndex % 4;
+          let gRow = Math.floor(gIndex / 4);
+          let gX = gCol * 33.333;
+          let gY = gRow * 25;
+          
+          girlEl.style.backgroundImage = `url('${gUrl}')`;
+          girlEl.style.backgroundPosition = `${gX}% ${gY}%`;
+          equipTexts.push("私:" + gItem.itemName);
+        }
+      } else {
+        girlEl.style.backgroundImage = "none";
       }
 
-      let imageUrl = (item.category === 'medieval') ? IMG_MEDIEVAL : IMG_MODERN;
-      let index = parseInt(item.imageUrl); 
-
-      let col = index % 4;
-      let row = Math.floor(index / 4);
-      let xPercent = col * (100 / 3);
-      let yPercent = row * (100 / 4);
-
-      previewEl.style.backgroundImage = `url('${imageUrl}')`;
-      previewEl.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
-      document.getElementById("currentEquipText").textContent = "現在のコーデ：" + item.itemName;
+      document.getElementById("currentEquipText").innerHTML = equipTexts.length > 0 ? equipTexts.join('<br>') : "現在のコーデ：未設定";
     }
 
     function updateUI() {
@@ -230,22 +255,22 @@
 
       const closetContainer = document.getElementById("ownedItemsContainer");
       closetContainer.innerHTML = "";
-      
       if (ownedItems.length === 0) {
-        closetContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">所持しているコーデはありません。<br>ショップで交換してみよう！</div>';
+        closetContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">所持品がありません。</div>';
       } else {
         ownedItems.forEach(itemId => {
           let item = shopItems.find(s => s.itemId === itemId);
           if (!item) return;
 
-          let isEquipped = (equippedItemId === itemId);
+          let isRafau = item.category === 'rafau';
+          let isEquipped = (isRafau ? equippedItems.rafau : equippedItems.girl) === itemId;
 
           let div = document.createElement("div");
           div.className = "item-card";
           div.innerHTML = `
             <div class="item-name">${item.itemName}</div>
-            <div class="label" style="font-size:11px;">[${item.category === 'medieval' ? '15世紀風' : '現代風'}]</div>
-            <button class="btn ${isEquipped ? 'btn-unequip' : 'btn-equip'}" onclick="toggleEquip('${item.itemId}')">
+            <div class="label" style="font-size:11px;">[${isRafau ? 'ラファウ' : (item.category === 'medieval' ? '15世紀風' : '現代風')}]</div>
+            <button class="btn ${isEquipped ? 'btn-unequip' : 'btn-equip'}" onclick="toggleEquip('${item.itemId}', ${isRafau})">
               ${isEquipped ? '着用中' : '着替える'}
             </button>
           `;
@@ -255,15 +280,12 @@
 
       const shopContainer = document.getElementById("shopItemsContainer");
       shopContainer.innerHTML = "";
-
       let filteredShop = shopItems.filter(item => item.category === currentShopCategory);
-
       if (filteredShop.length === 0) {
         shopContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">アイテムがありません。</div>';
       } else {
         filteredShop.forEach(item => {
           let isOwned = ownedItems.includes(item.itemId);
-
           let div = document.createElement("div");
           div.className = "item-card";
           div.innerHTML = `
@@ -279,45 +301,38 @@
     }
 
     function buyItem(itemId, price) {
-      if (currentTrust < price) {
-        alert("ポイント（好感度）が足りません！");
-        return;
-      }
-      if (!confirm(`本当に ${price} pt でこのコーデを獲得しますか？`)) return;
+      if (currentTrust < price) return alert("ポイントが足りません！");
+      if (!confirm(`本当に ${price} pt で獲得しますか？`)) return;
 
-      let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=buyItem&param=${encodeURIComponent(itemId)}&subParam=${price}`;
-      fetch(url)
+      fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=buyItem&param=${encodeURIComponent(itemId)}&subParam=${price}`)
         .then(res => res.json())
         .then(data => {
-          if (data.error) {
-            alert(data.error);
-            return;
-          }
+          if (data.error) return alert(data.error);
           currentTrust = data.trust;
-          document.getElementById("userTrust").textContent = currentTrust;
           ownedItems = data.owned ? data.owned.split(',') : [];
           updateUI();
-          alert("コーデを獲得しました！クローゼットから着替えられます。");
-        })
-        .catch(err => alert("通信エラー: " + err.message));
+          alert("獲得しました！");
+        });
     }
 
-    function toggleEquip(itemId) {
-      if (equippedItemId === itemId) {
-        equippedItemId = ""; 
+    function toggleEquip(itemId, isRafau) {
+      let slot = isRafau ? 'rafau' : 'girl';
+      
+      // 着脱の切り替え
+      if (equippedItems[slot] === itemId) {
+        equippedItems[slot] = ""; 
       } else {
-        equippedItemId = itemId; 
+        equippedItems[slot] = itemId; 
       }
 
-      let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(equippedItemId)}`;
-      fetch(url)
+      // 🟢 GASに "girl:m1,rafau:r2" の形で保存する
+      let saveString = `girl:${equippedItems.girl},rafau:${equippedItems.rafau}`;
+
+      fetch(`${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(saveString)}`)
         .then(res => res.json())
         .then(data => {
-          if (data.success) {
-            updateUI();
-          }
-        })
-        .catch(err => alert("保存エラー: " + err.message));
+          if (data.success) updateUI();
+        });
     }
   </script>
 </body>
