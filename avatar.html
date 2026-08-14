@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>アバター＆ショップ</title>
+  <title>アバター＆着せ替えショップ</title>
   <style>
     body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #1a1a1a; color: #f0f0f0; padding: 20px; box-sizing: border-box; }
     .card { background-color: #2c2c2c; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 5px solid #e74c3c; }
@@ -11,24 +11,40 @@
     .status-item { margin: 10px 0; font-size: 16px; }
     .label { color: #aaa; font-size: 14px; }
     
-    /* タブ切り替えボタン */
     .tab-container { display: flex; margin-bottom: 15px; border-bottom: 2px solid #444; }
     .tab-btn { flex: 1; background: none; border: none; padding: 10px; color: #aaa; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; }
     .tab-btn.active { color: #e74c3c; border-bottom: 2px solid #e74c3c; margin-bottom: -2px; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* アバタープレビューエリア */
-    .avatar-preview { text-align: center; background-color: #1e1e1e; padding: 20px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px; }
-    .avatar-box { font-size: 48px; margin-bottom: 10px; }
+    /* 🟢 アバタープレビューエリア（大きく表示） */
+    .avatar-preview { text-align: center; background-color: #1e1e1e; padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px; }
+    .avatar-stage {
+      position: relative;
+      width: 150px; height: 200px;
+      margin: 0 auto 10px auto;
+      background: #111;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #555;
+    }
+    #preview-girl {
+      position: absolute;
+      width: 100%; height: 100%;
+      background-size: 400% 500%;
+      background-repeat: no-repeat;
+    }
     
-    /* アイテムカードグリッド */
-    .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .shop-category-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+    .cat-btn { flex: 1; padding: 6px; background: #333; border: 1px solid #555; color: #aaa; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .cat-btn.active { background: #e74c3c; color: white; border-color: #e74c3c; }
+
+    .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 5px; }
     .item-card { background-color: #1e1e1e; border: 1px solid #444; border-radius: 6px; padding: 10px; text-align: center; }
-    .item-name { font-size: 14px; font-weight: bold; margin-bottom: 5px; color: #fff; }
+    .item-name { font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #fff; }
     .item-price { font-size: 12px; color: #f1c40f; margin-bottom: 8px; }
 
-    .btn { display: block; width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; color: white; cursor: pointer; }
+    .btn { display: block; width: 100%; padding: 8px; margin: 5px 0; border: none; border-radius: 5px; font-size: 13px; font-weight: bold; color: white; cursor: pointer; }
     .btn-buy { background-color: #e67e22; }
     .btn-equip { background-color: #27ae60; }
     .btn-unequip { background-color: #7f8c8d; }
@@ -53,32 +69,30 @@
       <h2>👤 マイアバター</h2>
       <div class="status-item"><span class="label">所持ポイント（好感度）:</span> <strong id="userTrust" style="color: #f1c40f;">0</strong> pt</div>
       
-      <!-- アバター簡易プレビュー -->
       <div class="avatar-preview">
-        <div class="avatar-box">🧍‍♂️</div>
-        <div id="currentEquipText" style="font-size: 13px; color: #aaa;">現在の装備：なし</div>
+        <div class="avatar-stage">
+          <div id="preview-girl"></div>
+        </div>
+        <div id="currentEquipText" style="font-size: 13px; color: #aaa;">現在のコーデ：なし</div>
       </div>
     </div>
 
     <div class="card">
-      <!-- タブ切り替え -->
       <div class="tab-container">
         <button class="tab-btn active" onclick="switchTab('closet')">クローゼット（所持品）</button>
         <button class="tab-btn" onclick="switchTab('shop')">ショップ</button>
       </div>
 
-      <!-- クローゼットタブ -->
       <div id="tab-closet" class="tab-content active">
-        <div id="ownedItemsContainer" class="item-grid">
-          <!-- 所持アイテムがここに動的に入ります -->
-        </div>
+        <div id="ownedItemsContainer" class="item-grid"></div>
       </div>
 
-      <!-- ショップタブ -->
       <div id="tab-shop" class="tab-content">
-        <div id="shopItemsContainer" class="item-grid">
-          <!-- ショップのアイテムがここに動的に入ります -->
+        <div class="shop-category-tabs">
+          <button id="cat-modern" class="cat-btn active" onclick="switchShopCategory('modern')">👗 現代風コーデ</button>
+          <button id="cat-medieval" class="cat-btn" onclick="switchShopCategory('medieval')">🛡️ 15世紀風</button>
         </div>
+        <div id="shopItemsContainer" class="item-grid"></div>
       </div>
     </div>
 
@@ -89,9 +103,13 @@
   <script>
     let myUserId = "";
     let currentTrust = 0;
-    let equippedItems = {}; 
-    let ownedItems = [];    
-    let shopItems = [];     
+    let equippedItemId = ""; 
+    let ownedItems = [];     
+    let shopItems = [];      
+    let currentShopCategory = 'modern'; 
+
+    const IMG_MODERN = "https://i.imgur.com/gwU0Lcc.png";
+    const IMG_MEDIEVAL = "https://i.imgur.com/Vpd9s4W.png";
 
     function showError(message) {
       document.getElementById("loading").style.display = "none";
@@ -101,7 +119,6 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      // 念のためURLパラメータからもuserIdが拾えるようにしておく
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get("userId")) {
         myUserId = urlParams.get("userId");
@@ -116,7 +133,7 @@
           liff.getProfile().then(profile => {
             myUserId = profile.userId;
             if (!myUserId) {
-              showError("ユーザーIDが取得できませんでした。LINEアプリ内から開いているかご確認ください。");
+              showError("ユーザーIDが取得できませんでした。");
               return;
             }
             loadAvatarData();
@@ -138,6 +155,18 @@
       }
     }
 
+    function switchShopCategory(category) {
+      currentShopCategory = category;
+      if(category === 'modern') {
+        document.getElementById('cat-modern').classList.add('active');
+        document.getElementById('cat-medieval').classList.remove('active');
+      } else {
+        document.getElementById('cat-medieval').classList.add('active');
+        document.getElementById('cat-modern').classList.remove('active');
+      }
+      updateUI();
+    }
+
     function loadAvatarData() {
       let url = GAS_API_URL + "?userId=" + encodeURIComponent(myUserId) + "&action=getAvatarData";
       fetch(url)
@@ -150,12 +179,12 @@
           currentTrust = data.trust;
           document.getElementById("userTrust").textContent = currentTrust;
 
-          equippedItems = {};
-          if (data.equipped) {
-            data.equipped.split(',').forEach(pair => {
-              let parts = pair.split(':');
-              if (parts.length === 2) equippedItems[parts[0]] = parts[1];
-            });
+          // 🟢 古いデータ形式（modern:m1 など）でも後ろの itemId (m1) を抽出できるように修正
+          let rawEquipped = data.equipped || "";
+          if (rawEquipped.includes(':')) {
+            equippedItemId = rawEquipped.split(':')[1]; // "modern:m1" なら "m1" を取り出す
+          } else {
+            equippedItemId = rawEquipped;
           }
 
           ownedItems = data.owned ? data.owned.split(',') : [];
@@ -168,29 +197,56 @@
         .catch(err => showError("データ通信エラー: " + err.message));
     }
 
+    function updateAvatarPreview() {
+      const previewEl = document.getElementById("preview-girl");
+      if (!equippedItemId) {
+        previewEl.style.backgroundImage = "none";
+        document.getElementById("currentEquipText").textContent = "現在のコーデ：未設定";
+        return;
+      }
+
+      let item = shopItems.find(s => s.itemId === equippedItemId);
+      if (!item) {
+        previewEl.style.backgroundImage = "none";
+        document.getElementById("currentEquipText").textContent = "現在のコーデ：不明 (" + equippedItemId + ")";
+        return;
+      }
+
+      let imageUrl = (item.category === 'medieval') ? IMG_MEDIEVAL : IMG_MODERN;
+      let index = parseInt(item.imageUrl); 
+
+      let col = index % 4;
+      let row = Math.floor(index / 4);
+      let xPercent = col * (100 / 3);
+      let yPercent = row * (100 / 4);
+
+      previewEl.style.backgroundImage = `url('${imageUrl}')`;
+      previewEl.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
+      document.getElementById("currentEquipText").textContent = "現在のコーデ：" + item.itemName;
+    }
+
     function updateUI() {
-      let equipText = Object.keys(equippedItems).length === 0 ? "なし" : Object.entries(equippedItems).map(([k, v]) => `${k}:${v}`).join(', ');
-      document.getElementById("currentEquipText").textContent = "現在の装備：" + equipText;
+      updateAvatarPreview();
 
       const closetContainer = document.getElementById("ownedItemsContainer");
       closetContainer.innerHTML = "";
       
       if (ownedItems.length === 0) {
-        closetContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">所持しているアイテムはありません。<br>ショップで交換してみよう！</div>';
+        closetContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">所持しているコーデはありません。<br>ショップで交換してみよう！</div>';
       } else {
         ownedItems.forEach(itemId => {
           let item = shopItems.find(s => s.itemId === itemId);
           if (!item) return;
 
-          let isEquipped = Object.values(equippedItems).includes(itemId);
+          let isEquipped = (equippedItemId === itemId);
 
           let div = document.createElement("div");
           div.className = "item-card";
           div.innerHTML = `
             <div class="item-name">${item.itemName}</div>
-            <div class="label" style="font-size:11px;">[${item.category}]</div>
-            <button class="btn ${isEquipped ? 'btn-unequip' : 'btn-equip'}" onclick="toggleEquip('${item.category}', '${item.itemId}')">
-              ${isEquipped ? '外す' : '身につける'}
+            <div class="label" style="font-size:11px;">[${item.category === 'medieval' ? '15世紀風' : '現代風'}]</div>
+            <button class="btn ${isEquipped ? 'btn-unequip' : 'btn-equip'}" onclick="toggleEquip('${item.itemId}')">
+              ${isEquipped ? '着用中' : '着替える'}
             </button>
           `;
           closetContainer.appendChild(div);
@@ -200,10 +256,12 @@
       const shopContainer = document.getElementById("shopItemsContainer");
       shopContainer.innerHTML = "";
 
-      if (shopItems.length === 0) {
-        shopContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">現在販売中のアイテムはありません。</div>';
+      let filteredShop = shopItems.filter(item => item.category === currentShopCategory);
+
+      if (filteredShop.length === 0) {
+        shopContainer.innerHTML = '<div style="grid-column: span 2; text-align: center; color: #777; padding: 20px;">アイテムがありません。</div>';
       } else {
-        shopItems.forEach(item => {
+        filteredShop.forEach(item => {
           let isOwned = ownedItems.includes(item.itemId);
 
           let div = document.createElement("div");
@@ -212,7 +270,7 @@
             <div class="item-name">${item.itemName}</div>
             <div class="item-price">🪙 ${item.price} pt</div>
             <button class="btn btn-buy" ${isOwned ? 'disabled style="background-color:#444; color:#777;"' : ''} onclick="buyItem('${item.itemId}', ${item.price})">
-              ${isOwned ? '所持済み' : '購入する'}
+              ${isOwned ? '所持済み' : '獲得する'}
             </button>
           `;
           shopContainer.appendChild(div);
@@ -225,7 +283,7 @@
         alert("ポイント（好感度）が足りません！");
         return;
       }
-      if (!confirm(`本当に ${price} pt で購入しますか？`)) return;
+      if (!confirm(`本当に ${price} pt でこのコーデを獲得しますか？`)) return;
 
       let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=buyItem&param=${encodeURIComponent(itemId)}&subParam=${price}`;
       fetch(url)
@@ -237,23 +295,21 @@
           }
           currentTrust = data.trust;
           document.getElementById("userTrust").textContent = currentTrust;
-          ownedItems = data.owned.split(',');
+          ownedItems = data.owned ? data.owned.split(',') : [];
           updateUI();
-          alert("購入しました！");
+          alert("コーデを獲得しました！クローゼットから着替えられます。");
         })
         .catch(err => alert("通信エラー: " + err.message));
     }
 
-    function toggleEquip(category, itemId) {
-      if (equippedItems[category] === itemId) {
-        delete equippedItems[category]; 
+    function toggleEquip(itemId) {
+      if (equippedItemId === itemId) {
+        equippedItemId = ""; 
       } else {
-        equippedItems[category] = itemId; 
+        equippedItemId = itemId; 
       }
 
-      let equipString = Object.entries(equippedItems).map(([k, v]) => `${k}:${v}`).join(',');
-      
-      let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(equipString)}`;
+      let url = `${GAS_API_URL}?userId=${encodeURIComponent(myUserId)}&action=saveAvatar&param=${encodeURIComponent(equippedItemId)}`;
       fetch(url)
         .then(res => res.json())
         .then(data => {
