@@ -19,35 +19,35 @@
 
     .avatar-preview { text-align: center; margin-bottom: 15px; }
     
+    /* ステージの高さを広げて全身が収まるように変更 */
     .avatar-stage {
       display: flex;
       justify-content: center;
-      align-items: flex-end;
-      width: 100%; height: 230px;
+      align-items: center;
+      width: 100%; height: 260px;
       margin: 0 auto 10px auto;
       background: #ffffff;
       border-radius: 12px;
       border: 2px solid #555;
-      padding-bottom: 15px;
     }
 
     .crop-box { position: relative; overflow: hidden; }
 
-    /* ラファウ */
-    .rafau-box { width: 110px; height: 180px; }
+    /* 全身が綺麗に収まる初期値に設定 */
+    .rafau-box { width: 120px; height: 220px; }
     #preview-rafau {
-      position: absolute; width: 120px; height: 190px;
-      left: -5px; top: -5px; background-size: 300% 100%;
+      position: absolute; width: 100%; height: 100%;
+      background-size: 300% 100%;
+      transform: scale(0.85); /* 縮小して全体を収める */
     }
 
-    /* 女の子（スライダーで動かす部分） */
     .girl-box {
-      width: 100px; height: 165px; margin-left: 10px;
+      width: 110px; height: 220px; margin-left: 10px;
     }
     #preview-girl {
       position: absolute; width: 100%; height: 100%;
       background-size: 400% 500%;
-      transform: scale(1.0) translateX(0px) translateY(0px);
+      transform: scale(0.85) translateY(-5px); /* 縮小して全体を収める */
     }
     
     .shop-category-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
@@ -69,7 +69,7 @@
     #error-box { display: none; background-color: #c0392b; color: white; padding: 15px; border-radius: 5px; margin-top: 20px; font-size: 14px; word-break: break-all; }
     #content { display: none; }
 
-    /* 🟢 スライダー調整パネル用のデザイン */
+    /* 調整パネル用のデザイン */
     .slider-row { margin-bottom: 12px; }
     .slider-row label { display: block; font-size: 11px; color: #aaa; margin-bottom: 3px; }
     .slider-row input[type="range"] { width: 100%; }
@@ -105,7 +105,6 @@
     </div>
 
     <div class="card">
-      <!-- 🟢 調整タブを追加 -->
       <div class="tab-container">
         <button class="tab-btn active" onclick="switchTab('closet')">クローゼット</button>
         <button class="tab-btn" onclick="switchTab('shop')">ショップ</button>
@@ -127,31 +126,24 @@
 
       <!-- 🟢 スライダー調整画面 -->
       <div id="tab-adjust" class="tab-content">
-        <p style="font-size:11px; color:#ccc; margin-top:0;">スライダーを動かして女の子のバランスを合わせてください。</p>
+        <p style="font-size:11px; color:#ccc; margin-top:0;">スライダーで女の子の大きさと位置を微調整できます。</p>
         
         <div class="slider-row">
-          <label>枠の幅 (width): <span id="val-w" class="slider-val">100</span>px</label>
-          <input type="range" id="sl-w" min="50" max="200" value="100" oninput="applyAdjustments()">
+          <label>枠の幅 (width): <span id="val-w" class="slider-val">110</span>px</label>
+          <input type="range" id="sl-w" min="50" max="200" value="110" oninput="applyAdjustments()">
         </div>
         <div class="slider-row">
-          <label>枠の高さ (height): <span id="val-h" class="slider-val">165</span>px</label>
-          <input type="range" id="sl-h" min="50" max="250" value="165" oninput="applyAdjustments()">
+          <label>枠の高さ (height): <span id="val-h" class="slider-val">220</span>px</label>
+          <input type="range" id="sl-h" min="100" max="300" value="220" oninput="applyAdjustments()">
         </div>
         <div class="slider-row">
-          <label>ズーム (scale): <span id="val-s" class="slider-val">1.0</span>倍</label>
-          <input type="range" id="sl-s" min="0.5" max="2.5" step="0.05" value="1.0" oninput="applyAdjustments()">
+          <label>全体縮小・拡大 (scale): <span id="val-s" class="slider-val">0.85</span>倍</label>
+          <input type="range" id="sl-s" min="0.3" max="1.5" step="0.05" value="0.85" oninput="applyAdjustments()">
         </div>
         <div class="slider-row">
-          <label>左右移動 (X): <span id="val-x" class="slider-val">0</span>px</label>
-          <input type="range" id="sl-x" min="-100" max="100" value="0" oninput="applyAdjustments()">
+          <label>上下移動 (Y): <span id="val-y" class="slider-val">-5</span>px</label>
+          <input type="range" id="sl-y" min="-100" max="100" value="-5" oninput="applyAdjustments()">
         </div>
-        <div class="slider-row">
-          <label>上下移動 (Y): <span id="val-y" class="slider-val">0</span>px</label>
-          <input type="range" id="sl-y" min="-100" max="100" value="0" oninput="applyAdjustments()">
-        </div>
-
-        <p style="font-size:11px; margin:5px 0 3px 0;">✅ 完成したCSS（コードに反映用）</p>
-        <textarea id="css-output" readonly></textarea>
       </div>
     </div>
 
@@ -171,27 +163,20 @@
     const IMG_MEDIEVAL = "https://i.imgur.com/Vpd9s4W.png";
     const IMG_RAFAU = "https://i.imgur.com/3j04EcO.png";
 
-    // 🟢 スライダーの値をリアルタイム反映
     function applyAdjustments() {
       let w = document.getElementById('sl-w').value;
       let h = document.getElementById('sl-h').value;
       let s = document.getElementById('sl-s').value;
-      let x = document.getElementById('sl-x').value;
       let y = document.getElementById('sl-y').value;
 
       document.getElementById('val-w').innerText = w;
       document.getElementById('val-h').innerText = h;
       document.getElementById('val-s').innerText = s;
-      document.getElementById('val-x').innerText = x;
       document.getElementById('val-y').innerText = y;
 
       document.getElementById('girl-box-el').style.width = w + 'px';
       document.getElementById('girl-box-el').style.height = h + 'px';
-      document.getElementById('preview-girl').style.transform = `scale(${s}) translateX(${x}px) translateY(${y}px)`;
-
-      document.getElementById('css-output').value = 
-`.girl-box { width: ${w}px; height: ${h}px; }
-#preview-girl { transform: scale(${s}) translateX(${x}px) translateY(${y}px); }`;
+      document.getElementById('preview-girl').style.transform = `scale(${s}) translateY(${y}px)`;
     }
 
     function showError(message) {
@@ -262,7 +247,7 @@
           updateUI();
           document.getElementById("loading").style.display = "none";
           document.getElementById("content").style.display = "block";
-          applyAdjustments(); // 初期スライダー値適用
+          applyAdjustments();
         })
         .catch(err => showError("通信エラー"));
     }
