@@ -296,7 +296,15 @@
     }
 
     function fetchData() {
-      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) 
+      fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          userId: currentUserId,
+          action: 'updateMemo',
+          param: newFullMemo
+        })
+      })
         .then(response => response.json())
         .then(data => {
           if(data.error) throw new Error(data.error);
