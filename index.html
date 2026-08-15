@@ -127,7 +127,7 @@
       background: rgba(56, 189, 248, 0.15);
       color: #38bdf8;
       border: 1px solid #38bdf8;
-      border-bottom: 1px solid rgba(56, 189, 248, 0.15); /* 下線をシームレスに */
+      border-bottom: 1px solid rgba(56, 189, 248, 0.15);
       box-shadow: 0 -4px 15px rgba(56, 189, 248, 0.1);
     }
     .tab-content { display: none; animation: fadeIn 0.4s ease; }
@@ -288,28 +288,19 @@
       return newLines.map(line => {
         const trimmed = line.trim();
         if (trimmed && !oldLines.includes(trimmed)) {
-          /* ダークテーマ用に少し明るめの赤（#ff8787）でハイライト */
           return `<span style="color: #ff8787; font-weight: bold;">${line}</span><br>`;
         }
         return `${line}<br>`;
       }).join('');
     }
 
+    // 🌟 正しいデータ読み込み処理（元に戻しました！）
     function fetchData() {
-      fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          userId: currentUserId,
-          action: 'updateMemo',
-          param: newFullMemo
-        })
-      })
+      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) 
         .then(response => response.json())
         .then(data => {
           if(data.error) throw new Error(data.error);
           
-          // シート一覧のプルダウンを動的に生成
           if(data.sheets && data.sheets.length > 0) {
             const select = document.getElementById('sheetSelect');
             select.innerHTML = "";
@@ -339,6 +330,7 @@
         .catch(error => { alert("データの読み込みに失敗しました。"); });
     }
 
+    // 🌟 修正済みの保存処理（JSONでPOST通信）
     function saveMemo() {
       const btn = document.getElementById('saveBtn');
       btn.innerText = "保存中... ⏳"; btn.disabled = true;
@@ -350,9 +342,17 @@
 
       const newFullMemo = `【ユーザープロフィール】\n${userP}\n\n【ラファウプロフィール】\n${rafauP}\n\n【特別な思い出】\n${mems}\n\n【現在起きていること】\n${curE}`;
 
-      fetch(`${GAS_URL}?userId=${currentUserId}&action=updateMemo&param=${encodeURIComponent(newFullMemo)}`)
+      fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: currentUserId,
+          action: 'updateMemo',
+          param: newFullMemo
+        })
+      })
         .then(response => response.json())
         .then(data => {
+          if (data.error) throw new Error(data.error);
           alert("メモを手動保存しました！");
           currentMemoData = parseMemoClient(newFullMemo);
           document.getElementById('editor-user').innerText = currentMemoData.userP;
@@ -361,10 +361,13 @@
           document.getElementById('editor-curE').innerText = currentMemoData.curE;
           btn.innerText = "手動でメモを上書き保存 💾"; btn.disabled = false;
         })
-        .catch(err => { alert("保存エラー"); btn.innerText = "手動でメモを上書き保存 💾"; btn.disabled = false; });
+        .catch(err => { 
+          alert("保存エラー：通信に失敗しました"); 
+          btn.innerText = "手動でメモを上書き保存 💾"; 
+          btn.disabled = false; 
+        });
     }
 
-    // 選択したシートの履歴から補完する
     function complementMemo() {
       const selectedSheet = document.getElementById('sheetSelect').value;
       const isConfirm = confirm(`「${selectedSheet}」の会話履歴を読み込んでメモを補完します。実行しますか？`);
@@ -403,7 +406,6 @@
         });
     }
 
-    // 重複項目の整理・統合専用ボタンの処理
     function cleanMemo() {
       const isConfirm = confirm("現在のメモにある重複項目や似たような記述を綺麗に整理・統合します。実行しますか？");
       if(!isConfirm) return;
