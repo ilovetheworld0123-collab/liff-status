@@ -5,91 +5,205 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ラファウ - ステータス＆記憶メモ</title>
   <style>
+    /* 🌌 宇宙背景と基本設定 */
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f0f4f8;
-      color: #333;
       margin: 0;
       padding: 15px;
+      background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
+
+    /* ✨ 星の瞬きアニメーション */
+    @keyframes twinkle {
+      0% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.1); }
+      100% { opacity: 0.3; transform: scale(1); }
+    }
+    .star-bg {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-image: 
+        radial-gradient(1px 1px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 60px 80px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 130px 40px, #e0f2fe, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 190px 150px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 250px 90px, #fef08a, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 300px 300px;
+      animation: twinkle 5s infinite ease-in-out;
+      z-index: -1;
+    }
+
+    /* 📦 グラスモーフィズム調のコンテナ */
     .container {
-      background: #fff;
-      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
       padding: 20px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       max-width: 500px;
       margin: 0 auto;
+      position: relative;
     }
-    h1 { font-size: 20px; color: #2c3e50; text-align: center; margin-bottom: 20px; }
+
+    h1 { 
+      font-size: 20px; 
+      color: #7dd3fc; 
+      text-align: center; 
+      margin-top: 5px;
+      margin-bottom: 20px; 
+      text-shadow: 0 0 10px rgba(125, 211, 252, 0.3); 
+    }
+    h3 { 
+      font-size: 16px; 
+      color: #fde047; 
+      margin-top: 25px; 
+      margin-bottom: 5px; 
+      border-bottom: 1px solid rgba(253, 224, 71, 0.2);
+      padding-bottom: 8px;
+    }
     
-    .status-box { background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-    .status-item { margin: 5px 0; font-size: 15px; }
-    .status-item span { font-weight: bold; color: #2980b9; }
+    /* 📊 ステータス */
+    .status-box { 
+      background: rgba(59, 130, 246, 0.1); 
+      border: 1px solid rgba(59, 130, 246, 0.3); 
+      padding: 15px; 
+      border-radius: 12px; 
+      margin-bottom: 20px; 
+      box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.05);
+    }
+    .status-item { margin: 6px 0; font-size: 15px; color: #cbd5e1; }
+    .status-item span { font-weight: bold; color: #38bdf8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.3); }
 
-    .control-box { background: #fdf2e9; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
-    .control-box select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+    /* 📂 コントロールボックス */
+    .control-box { 
+      background: rgba(30, 41, 59, 0.7); 
+      padding: 15px; 
+      border-radius: 12px; 
+      margin-bottom: 20px; 
+      border: 1px solid rgba(255, 255, 255, 0.1); 
+      font-size: 13px;
+      color: #e2e8f0; 
+    }
+    .control-box select { 
+      width: 100%; 
+      padding: 10px; 
+      margin-top: 8px; 
+      border-radius: 8px; 
+      border: 1px solid rgba(255,255,255,0.2); 
+      background: rgba(15, 23, 42, 0.9); 
+      color: #e2e8f0; 
+      font-size: 14px; 
+      outline: none;
+    }
+    .control-box select:focus { border-color: #38bdf8; }
 
-    /* タブ切り替え */
+    /* 🏷️ タブ切り替え */
     .tabs {
       display: flex;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-      border-bottom: 2px solid #ddd;
+      gap: 5px;
+      margin-top: 15px;
+      margin-bottom: 0;
     }
     .tab-btn {
       flex: 1;
-      padding: 10px 5px;
-      background: none;
-      border: none;
-      border-bottom: 3px solid transparent;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: none;
+      padding: 12px 5px;
+      color: #94a3b8;
       font-size: 13px;
       font-weight: bold;
-      color: #7f8c8d;
       cursor: pointer;
-      transition: 0.3s;
+      border-radius: 10px 10px 0 0;
+      transition: all 0.3s ease;
     }
-    .tab-btn:hover { color: #2980b9; }
+    .tab-btn:hover { background: rgba(255, 255, 255, 0.1); color: #e2e8f0; }
     .tab-btn.active {
-      color: #2980b9;
-      border-bottom: 3px solid #2980b9;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.15); /* 下線をシームレスに */
+      box-shadow: 0 -4px 15px rgba(56, 189, 248, 0.1);
     }
-    .tab-content { display: none; }
+    .tab-content { display: none; animation: fadeIn 0.4s ease; }
     .tab-content.active { display: block; }
 
-    /* エディタ */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* 📝 エディタ（ガラス風） */
     .editor {
       width: 100%;
       height: 180px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+      padding: 15px;
+      border: 1px solid #38bdf8;
+      border-radius: 0 10px 10px 10px;
       font-size: 14px;
       box-sizing: border-box;
-      line-height: 1.6;
-      background-color: #fafafa;
+      line-height: 1.7;
+      background-color: rgba(15, 23, 42, 0.5);
+      color: #e2e8f0;
       overflow-y: auto;
       outline: none;
+      transition: background-color 0.3s, box-shadow 0.3s;
     }
-    .editor:focus { border-color: #2980b9; background-color: #fff; }
+    .editor:focus { 
+      background-color: rgba(15, 23, 42, 0.8); 
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); 
+    }
 
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.8); }
+
+    /* 🔘 ボタン各種 */
     .btn {
-      display: block; width: 100%; padding: 12px; margin-top: 10px; border: none;
-      border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.3s;
+      display: block; 
+      width: 100%; 
+      padding: 14px; 
+      margin-top: 12px; 
+      border: none;
+      border-radius: 10px; 
+      font-size: 14px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      text-align: center; 
+      transition: all 0.2s ease;
+      color: white; 
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
     }
-    .btn-save { background-color: #27ae60; color: white; }
-    .btn-save:hover { background-color: #219150; }
-    .btn-complement { background-color: #8e44ad; color: white; }
-    .btn-complement:hover { background-color: #732d91; }
-    .btn-clean { background-color: #d35400; color: white; }
-    .btn-clean:hover { background-color: #ba4a00; }
-    .btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
-    #loading { text-align: center; font-weight: bold; color: #e67e22; display: none; margin-top: 15px; }
+    .btn:active { transform: scale(0.98); }
+    
+    .btn-save { background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+    .btn-save:hover { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
+    
+    .btn-complement { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); margin-top: 25px; }
+    .btn-complement:hover { background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); }
+    
+    .btn-clean { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); }
+    .btn-clean:hover { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); }
+    
+    .btn:disabled { background: #475569; color: #94a3b8; box-shadow: none; cursor: not-allowed; text-shadow: none; }
+    
+    #loading { text-align: center; font-weight: bold; color: #7dd3fc; display: none; margin-top: 20px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+    .help-text { font-size: 12px; color: #94a3b8; margin-top: 0; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
+  <!-- 宇宙背景 -->
+  <div class="star-bg"></div>
+
   <div class="container">
-    <h1>📊 ステータス＆記憶メモ</h1>
+    <h1>🔭 ステータス＆記憶メモ</h1>
     
     <div class="status-box">
       <div class="status-item">👤 名前: <span id="userName">読込中...</span></div>
@@ -107,7 +221,7 @@
     </div>
 
     <h3>📝 共有記憶（メモ）</h3>
-    <p style="font-size: 12px; color: #7f8c8d; margin-top: 0;">直接編集可能です。追加・変更部分は赤字になります。</p>
+    <p class="help-text">直接編集可能です。追加・変更部分は赤字でハイライトされます。</p>
 
     <!-- タブボタン -->
     <div class="tabs">
@@ -124,10 +238,11 @@
     <div id="tab4" class="tab-content"><div id="editor-curE" class="editor" contenteditable="true">読込中...</div></div>
     
     <button id="saveBtn" class="btn btn-save" onclick="saveMemo()">手動でメモを上書き保存 💾</button>
+    
     <button id="complementBtn" class="btn btn-complement" onclick="complementMemo()">選択したシートから記憶を補完する ✨</button>
     <button id="cleanBtn" class="btn btn-clean" onclick="cleanMemo()">メモの重複項目の整理・統合を行う 🧹</button>
     
-    <div id="loading">処理中です。しばらくお待ちください... ⏳</div>
+    <div id="loading">📡 宇宙と通信処理中です... ⏳</div>
   </div>
 
   <!-- LIFF SDK -->
@@ -173,7 +288,8 @@
       return newLines.map(line => {
         const trimmed = line.trim();
         if (trimmed && !oldLines.includes(trimmed)) {
-          return `<span style="color: #e74c3c; font-weight: bold;">${line}</span><br>`;
+          /* ダークテーマ用に少し明るめの赤（#ff8787）でハイライト */
+          return `<span style="color: #ff8787; font-weight: bold;">${line}</span><br>`;
         }
         return `${line}<br>`;
       }).join('');
