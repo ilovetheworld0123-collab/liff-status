@@ -294,7 +294,6 @@
       }).join('');
     }
 
-    // 🌟 正しいデータ読み込み処理（元に戻しました！）
     function fetchData() {
       fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) 
         .then(response => response.json())
@@ -330,7 +329,6 @@
         .catch(error => { alert("データの読み込みに失敗しました。"); });
     }
 
-    // 🌟 修正済みの保存処理（JSONでPOST通信）
     function saveMemo() {
       const btn = document.getElementById('saveBtn');
       btn.innerText = "保存中... ⏳"; btn.disabled = true;
@@ -342,7 +340,6 @@
 
       const newFullMemo = `【ユーザープロフィール】\n${userP}\n\n【ラファウプロフィール】\n${rafauP}\n\n【特別な思い出】\n${mems}\n\n【現在起きていること】\n${curE}`;
 
-      // 🌟 修正：GASが一番エラーを起こしにくい「フォーム送信形式」で大容量データを送る
       fetch(GAS_URL, {
         method: 'POST',
         headers: {
@@ -373,6 +370,7 @@
     }
 
     function complementMemo() {
+      // 🌟 プルダウンで選択されたシート名を取得してGASに送るように修正
       const selectedSheet = document.getElementById('sheetSelect').value;
       const isConfirm = confirm(`「${selectedSheet}」の会話履歴を読み込んでメモを補完します。実行しますか？`);
       if(!isConfirm) return;
@@ -385,6 +383,7 @@
       btn.disabled = true; cleanBtn.disabled = true; saveBtn.disabled = true;
       loading.style.display = "block";
 
+      // 🌟 param に選択されたシート名（selectedSheet）を渡してリクエスト
       fetch(`${GAS_URL}?userId=${currentUserId}&action=complementMemo&param=${encodeURIComponent(selectedSheet)}`)
         .then(response => response.json())
         .then(data => {
