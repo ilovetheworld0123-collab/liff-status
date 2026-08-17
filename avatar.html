@@ -64,6 +64,25 @@
     .label { color: #94a3b8; font-size: 13px; }
     #userTrust { color: #fde047; text-shadow: 0 0 8px rgba(253, 224, 71, 0.5); font-size: 18px; }
 
+    /* 🚑 看病緊急アイテム専用枠 */
+    .care-card-box {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: inset 0 0 15px rgba(239, 68, 68, 0.1);
+    }
+    .care-card-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #fca5a5;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
     /* 🏷️ タブデザイン */
     .tab-container { display: flex; gap: 8px; margin-bottom: 20px; }
     .tab-btn { 
@@ -158,6 +177,9 @@
     .btn-buy { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3); }
     .btn-buy:hover { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
     
+    .btn-care { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
+    .btn-care:hover { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); }
+
     .btn-use { background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%); box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3); }
     .btn-use:hover { background: linear-gradient(135deg, #0284c7 0%, #059669 100%); }
     
@@ -196,6 +218,27 @@
         <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">現在の有効な効果：</div>
         <div id="activeEffectText">なし（通常状態）</div>
         <button id="clearEffectBtn" class="btn btn-clear" style="display:none;" onclick="clearEffect()">効果を終了する（解除）</button>
+      </div>
+    </div>
+
+    <!-- 🚑 看病緊急アイテム（風邪モード時用） -->
+    <div class="care-card-box">
+      <div class="care-card-title">🌡️ 看病緊急処置（熱を下げる）</div>
+      <div class="item-grid" style="max-height: none;">
+        <div class="item-card">
+          <div>
+            <div class="item-name">🧊 氷のうで冷やす</div>
+            <div class="item-desc">頭を冷やして熱を下げます<br>（体温 -3.0℃）</div>
+          </div>
+          <button class="btn btn-care" onclick="useCareItem('ice')">使用する</button>
+        </div>
+        <div class="item-card">
+          <div>
+            <div class="item-name">🍵 薬草茶を飲ませる</div>
+            <div class="item-desc">体を温めて発汗を促します<br>（体温 -3.0℃）</div>
+          </div>
+          <button class="btn btn-care" onclick="useCareItem('tea')">使用する</button>
+        </div>
       </div>
     </div>
 
@@ -330,6 +373,24 @@
           bagContainer.appendChild(div);
         });
       }
+    }
+
+    // 🚑 看病アイテム処理（氷のう / 薬草茶）
+    function useCareItem(type) {
+      const itemName = type === 'ice' ? '氷のう' : '薬草茶';
+      if (!confirm(`「${itemName}」を使って看護しますか？`)) return;
+
+      fetch(`${GAS_API_URL}?action=useSickCareItem&userId=${encodeURIComponent(myUserId)}&param=${encodeURIComponent(type)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.isHealed ? "熱が36.5℃まで下がって意識が戻りました！" : `看護しました！現在の体温：${data.feverTemp}℃`);
+            loadData();
+          } else {
+            alert(data.error || "看護処理に失敗しました。");
+          }
+        })
+        .catch(err => alert("通信エラーが発生しました。"));
     }
 
     function buyItem(itemId, price) {
