@@ -131,7 +131,6 @@
       padding-right: 5px; 
     }
     
-    /* カスタムスクロールバー */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 10px; }
@@ -198,7 +197,6 @@
   </style>
 </head>
 <body>
-  <!-- 宇宙背景 -->
   <div class="star-bg"></div>
 
   <script>
@@ -221,7 +219,6 @@
       </div>
     </div>
 
-    <!-- 🚑 看病緊急アイテム（風邪モード時用） -->
     <div class="care-card-box">
       <div class="care-card-title">🌡️ 看病緊急処置（熱を下げる）</div>
       <div class="item-grid" style="max-height: none;">
@@ -248,12 +245,10 @@
         <button class="tab-btn" onclick="switchTab('bag')">🎒 バッグ</button>
       </div>
 
-      <!-- ショップタブ -->
       <div id="tab-shop" class="tab-content active">
         <div id="shopItemsContainer" class="item-grid"></div>
       </div>
 
-      <!-- バッグタブ -->
       <div id="tab-bag" class="tab-content">
         <div id="bagItemsContainer" class="item-grid"></div>
       </div>
@@ -411,7 +406,8 @@
 
     function useItem(itemId, index) {
       let item = shopItems.find(s => s.itemId === itemId);
-      if (!confirm(`「${item.itemName}」を使用しますか？\n（※使うと消費されます）`)) return;
+      let confirmMsg = `「${item.itemName}」を使用しますか？\n（※使うと効果が発動します）`;
+      if (!confirm(confirmMsg)) return;
 
       ownedItems.splice(index, 1);
       let newOwnedString = ownedItems.join(',');
@@ -422,7 +418,11 @@
         .then(data => {
           if (data.success) {
             updateUI();
-            alert(`「${item.itemName}」の効果が発動しました！`);
+            if (itemId.includes('sick') || itemId.includes('fever') || itemId.includes('kusuri')) {
+              alert(`「${item.itemName}」の効果でラファウが風邪を引いてしまいました……！（42.0℃）`);
+            } else {
+              alert(`「${item.itemName}」の効果が発動しました！`);
+            }
           }
         });
     }
