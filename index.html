@@ -66,6 +66,40 @@
       border-bottom: 1px solid rgba(253, 224, 71, 0.2);
       padding-bottom: 8px;
     }
+
+    /* 🖼️ 立ち絵＆体温バッジエリア */
+    .avatar-card {
+      text-align: center;
+      margin-bottom: 15px;
+      background: rgba(15, 23, 42, 0.4);
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .rafau-img {
+      width: 170px;
+      height: auto;
+      margin: 10px auto;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+      transition: all 0.3s ease;
+    }
+    .temp-badge {
+      display: inline-block;
+      padding: 5px 14px;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      font-weight: bold;
+      border-radius: 20px;
+      font-size: 14px;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+      animation: pulse 2s infinite;
+    }
+    .temp-badge.normal-badge {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+      animation: none;
+    }
     
     /* 📊 ステータス */
     .status-box { 
@@ -205,6 +239,12 @@
   <div class="container">
     <h1>🔭 ステータス＆記憶メモ</h1>
     
+    <!-- 🖼️ 立ち絵・体温表示エリア -->
+    <div class="avatar-card">
+      <div id="tempBadge" class="temp-badge normal-badge">平熱（36.5℃）</div>
+      <img id="rafauImg" class="rafau-img" src="" alt="ラファウ">
+    </div>
+
     <div class="status-box">
       <div class="status-item">👤 名前: <span id="userName">読込中...</span></div>
       <div class="status-item">💖 好感度: <span id="trustScore">読込中...</span></div>
@@ -251,6 +291,12 @@
     const LIFF_ID = "2011085090-Y3VoNpnw"; 
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwMFWZJ7i-6B45cY-WYdW_4FNbF_p1I7kbH5Cr5eulA5IcOJkVZv1AN4FsrrjGtoj7g/exec";
     
+    // 🖼️ 指定いただいたImgurの体温別立ち絵URL
+    const IMG_FEVER_40 = "https://i.imgur.com/CNPGgyT.png"; // 40.0℃〜（重症）
+    const IMG_FEVER_38 = "https://i.imgur.com/4X3lG8c.png"; // 38.0℃〜39.9℃（高熱）
+    const IMG_FEVER_36 = "https://i.imgur.com/pQ7wCWD.png"; // 36.6℃〜37.9℃（微熱）
+    const IMG_NORMAL   = "https://i.imgur.com/Y2uKVeM.png"; // 36.5℃（平熱）
+
     let currentUserId = "";
     let currentMemoData = { userP: "", rafauP: "", mems: "", curE: "" };
 
@@ -320,6 +366,24 @@
           document.getElementById('stageName').innerText = data.stage;
           document.getElementById('moodState').innerText = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
           
+          // 🌡️ 体温と立ち絵画像のリアルタイム更新処理
+          const temp = data.feverTemp || 36.5;
+          const imgEl = document.getElementById('rafauImg');
+          const badgeEl = document.getElementById('tempBadge');
+
+          if (temp > 36.5) {
+            badgeEl.innerText = `風邪（${temp.toFixed(1)}℃）`;
+            badgeEl.className = "temp-badge";
+
+            if (temp >= 40.0) imgEl.src = IMG_FEVER_40;
+            else if (temp >= 38.0) imgEl.src = IMG_FEVER_38;
+            else imgEl.src = IMG_FEVER_36;
+          } else {
+            badgeEl.innerText = "平熱（36.5℃）";
+            badgeEl.className = "temp-badge normal-badge";
+            imgEl.src = IMG_NORMAL;
+          }
+
           currentMemoData = parseMemoClient(data.memo);
           document.getElementById('editor-user').innerText = currentMemoData.userP;
           document.getElementById('editor-rafau').innerText = currentMemoData.rafauP;
@@ -370,7 +434,6 @@
     }
 
     function complementMemo() {
-      // 🌟 プルダウンで選択されたシート名を取得してGASに送るように修正
       const selectedSheet = document.getElementById('sheetSelect').value;
       const isConfirm = confirm(`「${selectedSheet}」の会話履歴を読み込んでメモを補完します。実行しますか？`);
       if(!isConfirm) return;
@@ -383,7 +446,6 @@
       btn.disabled = true; cleanBtn.disabled = true; saveBtn.disabled = true;
       loading.style.display = "block";
 
-      // 🌟 param に選択されたシート名（selectedSheet）を渡してリクエスト
       fetch(`${GAS_URL}?userId=${currentUserId}&action=complementMemo&param=${encodeURIComponent(selectedSheet)}`)
         .then(response => response.json())
         .then(data => {
