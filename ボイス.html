@@ -78,10 +78,9 @@
         <div id="status" class="status">読み込み中...</div>
     </div>
 
-    <audio id="audioPlayer"></audio>
+    <audio id="audioPlayer" preload="auto"></audio>
 
     <script>
-        // ご自身のGASのウェブアプリURL（doGetが動くURL）に書き換えてください
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMFWZJ7i-6B45cY-WYdW_4FNbF_p1I7kbH5Cr5eulA5IcOJkVZv1AN4FsrrjGtoj7g/exec";
 
         let audioPlayer = document.getElementById('audioPlayer');
@@ -89,9 +88,10 @@
         let statusText = document.getElementById('status');
         let audioUrl = "";
 
-        // LIFF初期化
-        window.onload = async function() {
+        // LIFF初期化とデータ取得
+        window.addEventListener('DOMContentLoaded', async () => {
             try {
+                // LIFFの初期化
                 await liff.init({ liffId: "2011085090-hlcuTQzK" });
                 
                 if (!liff.isLoggedIn()) {
@@ -99,8 +99,7 @@
                     return;
                 }
 
-                const context = liff.getContext();
-                const userId = context ? context.userId : "";
+                const userId = liff.getContext() ? liff.getContext().userId : "";
 
                 if (!userId) {
                     statusText.innerText = "ユーザーIDが取得できませんでした";
@@ -109,18 +108,17 @@
 
                 // GASから最新の音声URLを取得
                 let res = await fetch(`${GAS_WEB_APP_URL}?action=getLatestAudio&userId=${userId}`);
-                let textData = await res.text(); // まずテキストとして受け取る
+                let textData = await res.text();
                 
                 let data;
                 try {
-                    data = JSON.parse(textData); // JSONに変換を試みる
-                } catch (e) {
-                    console.error("受け取ったデータ:", textData);
-                    statusText.innerText = "サーバーエラー: 応答が不正です";
+                    data = JSON.parse(textData);
+                } catch (parseErr) {
+                    statusText.innerText = "データ解析エラー";
                     return;
                 }
 
-                if (data.success && data.audioUrl) {
+                if (data && data.success && data.audioUrl) {
                     audioUrl = data.audioUrl;
                     audioPlayer.src = audioUrl;
                     statusText.innerText = "再生準備完了";
@@ -131,23 +129,19 @@
                 }
 
             } catch (err) {
-                statusText.innerText = "初期化エラー: " + err.message;
+                statusText.innerText = "初期化エラー: " + (err.message || err);
             }
-        };
+        });
+
         function togglePlay() {
             if (!audioUrl) return;
 
-            // タップされた瞬間に即座にオーディオをロード・再生を試みる
             if (audioPlayer.paused) {
-                audioPlayer.src = audioUrl; // 再生時に明示的にセット
-                audioPlayer.load();
-                
                 audioPlayer.play().then(() => {
                     playBtn.innerText = "⏸";
                     statusText.innerText = "再生中...";
                 }).catch(e => {
-                    console.error("再生エラー:", e);
-                    statusText.innerText = "再生失敗 (制限ブロックの可能性)";
+                    statusText.innerText = "再生失敗 (タップして再試行)";
                 });
             } else {
                 audioPlayer.pause();
