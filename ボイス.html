@@ -92,7 +92,6 @@
         // LIFF初期化
         window.onload = async function() {
             try {
-                // LIFF IDはご自身のものに書き換えてください
                 await liff.init({ liffId: "2011085090-hlcuTQzK" });
                 
                 if (!liff.isLoggedIn()) {
@@ -110,7 +109,16 @@
 
                 // GASから最新の音声URLを取得
                 let res = await fetch(`${GAS_WEB_APP_URL}?action=getLatestAudio&userId=${userId}`);
-                let data = await res.json();
+                let textData = await res.text(); // まずテキストとして受け取る
+                
+                let data;
+                try {
+                    data = JSON.parse(textData); // JSONに変換を試みる
+                } catch (e) {
+                    console.error("受け取ったデータ:", textData);
+                    statusText.innerText = "サーバーエラー: 応答が不正です";
+                    return;
+                }
 
                 if (data.success && data.audioUrl) {
                     audioUrl = data.audioUrl;
@@ -126,7 +134,6 @@
                 statusText.innerText = "初期化エラー: " + err.message;
             }
         };
-
         function togglePlay() {
             if (!audioUrl) return;
 
