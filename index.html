@@ -340,11 +340,18 @@
       }).join('');
     }
 
-    function fetchData() {
-      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) 
-        .then(response => response.json())
+    unction fetchData() {
+      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`)
+        .then(async response => {
+          const text = await response.text();
+          try {
+            return JSON.parse(text);
+          } catch(e) {
+            throw new Error("サーバー応答が不正です:\n" + text.substring(0, 100));
+          }
+        })
         .then(data => {
-          if(data.error) throw new Error(data.error);
+          if(data.error) throw new Error("GAS側システムエラー:\n" + data.error);
           
           if(data.sheets && data.sheets.length > 0) {
             const select = document.getElementById('sheetSelect');
@@ -359,14 +366,22 @@
 
           return fetch(`${GAS_URL}?userId=${currentUserId}`);
         })
-        .then(response => response.json())
+        .then(async response => {
+          const text = await response.text();
+          try {
+            return JSON.parse(text);
+          } catch(e) {
+            throw new Error("サーバー応答が不正です(後半):\n" + text.substring(0, 100));
+          }
+        })
         .then(data => {
+          if(data.error) throw new Error("GAS側システムエラー(後半):\n" + data.error);
+
           document.getElementById('userName').innerText = data.name || "名無し";
           document.getElementById('trustScore').innerText = data.trust;
           document.getElementById('stageName').innerText = data.stage;
           document.getElementById('moodState').innerText = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
           
-          // 🌡️ 体温と立ち絵画像のリアルタイム更新処理
           const temp = data.feverTemp || 36.5;
           const imgEl = document.getElementById('rafauImg');
           const badgeEl = document.getElementById('tempBadge');
@@ -374,7 +389,6 @@
           if (temp > 36.5) {
             badgeEl.innerText = `風邪（${temp.toFixed(1)}℃）`;
             badgeEl.className = "temp-badge";
-
             if (temp >= 40.0) imgEl.src = IMG_FEVER_40;
             else if (temp >= 38.0) imgEl.src = IMG_FEVER_38;
             else imgEl.src = IMG_FEVER_36;
@@ -390,7 +404,10 @@
           document.getElementById('editor-mems').innerText = currentMemoData.mems;
           document.getElementById('editor-curE').innerText = currentMemoData.curE;
         })
-        .catch(error => { alert("データの読み込みに失敗しました。"); });
+        .catch(error => { 
+          // 🚨 本当のエラー理由を画面に表示させます
+          alert("🚨 エラー詳細:\n" + error.message); 
+        });
     }
 
     function saveMemo() {
