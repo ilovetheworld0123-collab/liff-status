@@ -340,18 +340,11 @@
       }).join('');
     }
 
-    unction fetchData() {
-      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`)
-        .then(async response => {
-          const text = await response.text();
-          try {
-            return JSON.parse(text);
-          } catch(e) {
-            throw new Error("サーバー応答が不正です:\n" + text.substring(0, 100));
-          }
-        })
+    function fetchData() {
+      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) 
+        .then(response => response.json())
         .then(data => {
-          if(data.error) throw new Error("GAS側システムエラー:\n" + data.error);
+          if(data.error) throw new Error(data.error);
           
           if(data.sheets && data.sheets.length > 0) {
             const select = document.getElementById('sheetSelect');
@@ -366,17 +359,8 @@
 
           return fetch(`${GAS_URL}?userId=${currentUserId}`);
         })
-        .then(async response => {
-          const text = await response.text();
-          try {
-            return JSON.parse(text);
-          } catch(e) {
-            throw new Error("サーバー応答が不正です(後半):\n" + text.substring(0, 100));
-          }
-        })
+        .then(response => response.json())
         .then(data => {
-          if(data.error) throw new Error("GAS側システムエラー(後半):\n" + data.error);
-
           document.getElementById('userName').innerText = data.name || "名無し";
           document.getElementById('trustScore').innerText = data.trust;
           document.getElementById('stageName').innerText = data.stage;
@@ -389,6 +373,7 @@
           if (temp > 36.5) {
             badgeEl.innerText = `風邪（${temp.toFixed(1)}℃）`;
             badgeEl.className = "temp-badge";
+
             if (temp >= 40.0) imgEl.src = IMG_FEVER_40;
             else if (temp >= 38.0) imgEl.src = IMG_FEVER_38;
             else imgEl.src = IMG_FEVER_36;
@@ -404,10 +389,7 @@
           document.getElementById('editor-mems').innerText = currentMemoData.mems;
           document.getElementById('editor-curE').innerText = currentMemoData.curE;
         })
-        .catch(error => { 
-          // 🚨 本当のエラー理由を画面に表示させます
-          alert("🚨 エラー詳細:\n" + error.message); 
-        });
+        .catch(error => { alert("データの読み込みに失敗しました。"); });
     }
 
     function saveMemo() {
