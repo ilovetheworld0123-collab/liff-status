@@ -63,9 +63,8 @@
         }
         .status {
             margin-top: 16px;
-            font-size: 0.75rem;
-            color: #f87171;
-            word-break: break-all;
+            font-size: 0.8rem;
+            color: #4ade80;
         }
     </style>
 </head>
@@ -112,18 +111,15 @@
                 try {
                     data = JSON.parse(textData);
                 } catch (parseErr) {
-                    // JSONパースに失敗した場合、GASから何が返ってきているかをそのまま画面に表示
-                    statusText.innerText = "サーバー応答エラー: " + textData.substring(0, 100);
+                    statusText.innerText = "データ解析エラー";
                     return;
                 }
 
                 if (data && data.success && data.audioUrl) {
                     audioUrl = data.audioUrl;
                     audioPlayer.src = audioUrl;
-                    statusText.style.color = "#4ade80";
                     statusText.innerText = "再生準備完了";
                 } else {
-                    statusText.style.color = "#9ca3af";
                     statusText.innerText = "直近の音声データがありません";
                     playBtn.disabled = true;
                     playBtn.style.opacity = 0.5;
@@ -134,16 +130,21 @@
             }
         });
 
-        function togglePlay() {
+        async function togglePlay() {
             if (!audioUrl) return;
 
             if (audioPlayer.paused) {
-                audioPlayer.play().then(() => {
+                try {
+                    // スマホのブロックを解除するため、まずは一度無音（またはロード）を挟んでから再生する
+                    audioPlayer.src = audioUrl;
+                    await audioPlayer.play();
+                    
                     playBtn.innerText = "⏸";
                     statusText.innerText = "再生中...";
-                }).catch(e => {
-                    statusText.innerText = "再生失敗 (タップして再試行)";
-                });
+                } catch (e) {
+                    console.error(e);
+                    statusText.innerText = "再生失敗 (もう一度押してください)";
+                }
             } else {
                 audioPlayer.pause();
                 playBtn.innerText = "▶";
