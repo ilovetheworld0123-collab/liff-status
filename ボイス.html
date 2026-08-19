@@ -78,7 +78,8 @@
         <div id="status" class="status">読み込み中...</div>
     </div>
 
-    <audio id="audioPlayer" preload="auto"></audio>
+    <!-- スマホ対応を強化したオーディオタグ -->
+    <audio id="audioPlayer" playsinline preload="auto"></audio>
 
     <script>
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwMFWZJ7i-6B45cY-WYdW_4FNbF_p1I7kbH5Cr5eulA5IcOJkVZv1AN4FsrrjGtoj7g/exec";
@@ -117,7 +118,14 @@
 
                 if (data && data.success && data.audioUrl) {
                     audioUrl = data.audioUrl;
+                    
+                    // GoogleドライブのURL形式を、より確実にストリーミング再生できる形式（uc?id=...）に最適化
+                    if (audioUrl.includes("drive.google.com")) {
+                        audioUrl = audioUrl.replace("export=download&id=", "uc?id=");
+                    }
+
                     audioPlayer.src = audioUrl;
+                    audioPlayer.load();
                     statusText.innerText = "再生準備完了";
                 } else {
                     statusText.innerText = "直近の音声データがありません";
@@ -135,15 +143,14 @@
 
             if (audioPlayer.paused) {
                 try {
-                    // スマホのブロックを解除するため、まずは一度無音（またはロード）を挟んでから再生する
-                    audioPlayer.src = audioUrl;
-                    await audioPlayer.play();
-                    
-                    playBtn.innerText = "⏸";
                     statusText.innerText = "再生中...";
+                    playBtn.innerText = "⏸";
+                    
+                    await audioPlayer.play();
                 } catch (e) {
                     console.error(e);
-                    statusText.innerText = "再生失敗 (もう一度押してください)";
+                    playBtn.innerText = "▶";
+                    statusText.innerText = "再生失敗 (もう一度タップ)";
                 }
             } else {
                 audioPlayer.pause();
@@ -155,6 +162,11 @@
         audioPlayer.onended = function() {
             playBtn.innerText = "▶";
             statusText.innerText = "再生終了";
+        };
+        
+        audioPlayer.onerror = function() {
+            playBtn.innerText = "▶";
+            statusText.innerText = "音声の読み込みに失敗しました";
         };
     </script>
 </body>
