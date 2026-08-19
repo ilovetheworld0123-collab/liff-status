@@ -67,38 +67,28 @@
       padding-bottom: 8px;
     }
 
-    /* 🖼️ 立ち絵＆体温バッジエリア */
+    /* 🌡️ 体温バッジエリア（画像なし・テキストのみでスッキリ） */
     .avatar-card {
       text-align: center;
       margin-bottom: 15px;
       background: rgba(15, 23, 42, 0.4);
-      padding: 15px;
+      padding: 12px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .rafau-img {
-      width: 170px;
-      height: auto;
-      margin: 10px auto;
-      display: block;
-      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
-      transition: all 0.3s ease;
-    }
     .temp-badge {
       display: inline-block;
-      padding: 5px 14px;
+      padding: 6px 18px;
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: #ffffff;
       font-weight: bold;
       border-radius: 20px;
-      font-size: 14px;
+      font-size: 15px;
       box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
-      animation: pulse 2s infinite;
     }
     .temp-badge.normal-badge {
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
-      animation: none;
     }
     
     /* 📊 ステータス */
@@ -108,10 +98,9 @@
       padding: 15px; 
       border-radius: 12px; 
       margin-bottom: 20px; 
-      box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.05);
     }
     .status-item { margin: 6px 0; font-size: 15px; color: #cbd5e1; }
-    .status-item span { font-weight: bold; color: #38bdf8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.3); }
+    .status-item span { font-weight: bold; color: #38bdf8; }
 
     /* 📂 コントロールボックス */
     .control-box { 
@@ -134,7 +123,6 @@
       font-size: 14px; 
       outline: none;
     }
-    .control-box select:focus { border-color: #38bdf8; }
 
     /* 🏷️ タブ切り替え */
     .tabs {
@@ -154,22 +142,17 @@
       font-weight: bold;
       cursor: pointer;
       border-radius: 10px 10px 0 0;
-      transition: all 0.3s ease;
     }
-    .tab-btn:hover { background: rgba(255, 255, 255, 0.1); color: #e2e8f0; }
     .tab-btn.active {
       background: rgba(56, 189, 248, 0.15);
       color: #38bdf8;
       border: 1px solid #38bdf8;
       border-bottom: 1px solid rgba(56, 189, 248, 0.15);
-      box-shadow: 0 -4px 15px rgba(56, 189, 248, 0.1);
     }
-    .tab-content { display: none; animation: fadeIn 0.4s ease; }
+    .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-    /* 📝 エディタ（ガラス風） */
+    /* 📝 エディタ */
     .editor {
       width: 100%;
       height: 180px;
@@ -183,18 +166,11 @@
       color: #e2e8f0;
       overflow-y: auto;
       outline: none;
-      transition: background-color 0.3s, box-shadow 0.3s;
-    }
-    .editor:focus { 
-      background-color: rgba(15, 23, 42, 0.8); 
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); 
     }
 
-    /* カスタムスクロールバー */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.8); }
 
     /* 🔘 ボタン各種 */
     .btn {
@@ -208,41 +184,27 @@
       font-weight: bold; 
       cursor: pointer; 
       text-align: center; 
-      transition: all 0.2s ease;
       color: white; 
-      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
     }
-    .btn:active { transform: scale(0.98); }
+    .btn-save { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .btn-complement { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); margin-top: 25px; }
+    .btn-clean { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
     
-    .btn-save { background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
-    .btn-save:hover { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
-    
-    .btn-complement { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); margin-top: 25px; }
-    .btn-complement:hover { background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); }
-    
-    .btn-clean { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); }
-    .btn-clean:hover { background: linear-gradient(135deg, #d97706 0%, #b45309 100%); }
-    
-    .btn:disabled { background: #475569; color: #94a3b8; box-shadow: none; cursor: not-allowed; text-shadow: none; }
-    
-    #loading { text-align: center; font-weight: bold; color: #7dd3fc; display: none; margin-top: 20px; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-
+    #loading { text-align: center; font-weight: bold; color: #7dd3fc; display: none; margin-top: 20px; }
     .help-text { font-size: 12px; color: #94a3b8; margin-top: 0; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-  <!-- 宇宙背景 -->
   <div class="star-bg"></div>
 
   <div class="container">
     <h1>🔭 ステータス＆記憶メモ</h1>
     
-    <!-- 🖼️ 立ち絵・体温表示エリア -->
+    <!-- 🌡️ 体温表示バッジのみ（画像なし） -->
     <div class="avatar-card">
       <div id="tempBadge" class="temp-badge normal-badge">平熱（36.5℃）</div>
-      <img id="rafauImg" class="rafau-img" src="" alt="ラファウ">
     </div>
 
     <div class="status-box">
@@ -252,7 +214,6 @@
       <div class="status-item">🎭 機嫌: <span id="moodState">読込中...</span></div>
     </div>
 
-    <!-- 🟢 参照するヒストリー（シート）を選ぶコントロール -->
     <div class="control-box">
       <label for="sheetSelect">📂 <b>補完で読み込む会話シートを選択:</b></label>
       <select id="sheetSelect">
@@ -263,7 +224,6 @@
     <h3>📝 共有記憶（メモ）</h3>
     <p class="help-text">直接編集可能です。追加・変更部分は赤字でハイライトされます。</p>
 
-    <!-- タブボタン -->
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('tab1', this)">ユーザー</button>
       <button class="tab-btn" onclick="switchTab('tab2', this)">ラファウ</button>
@@ -271,37 +231,22 @@
       <button class="tab-btn" onclick="switchTab('tab4', this)">現在地</button>
     </div>
 
-    <!-- 各タブの中身 -->
     <div id="tab1" class="tab-content active"><div id="editor-user" class="editor" contenteditable="true">読込中...</div></div>
     <div id="tab2" class="tab-content"><div id="editor-rafau" class="editor" contenteditable="true">読込中...</div></div>
     <div id="tab3" class="tab-content"><div id="editor-mems" class="editor" contenteditable="true">読込中...</div></div>
     <div id="tab4" class="tab-content"><div id="editor-curE" class="editor" contenteditable="true">読込中...</div></div>
     
     <button id="saveBtn" class="btn btn-save" onclick="saveMemo()">手動でメモを上書き保存 💾</button>
-    
     <button id="complementBtn" class="btn btn-complement" onclick="complementMemo()">選択したシートから記憶を補完する ✨</button>
     <button id="cleanBtn" class="btn btn-clean" onclick="cleanMemo()">メモの重複項目の整理・統合を行う 🧹</button>
     
-    <div id="loading">📡 宇宙と通信処理中です... ⏳</div>
+    <div id="loading">📡 通信処理中です... ⏳</div>
   </div>
 
-  <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     const LIFF_ID = "2011085090-Y3VoNpnw"; 
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwMFWZJ7i-6B45cY-WYdW_4FNbF_p1I7kbH5Cr5eulA5IcOJkVZv1AN4FsrrjGtoj7g/exec";
-    
-    // 🖼️ 立ち絵URL
-    const IMG_FEVER_40 = "https://i.imgur.com/CNPGgyT.png";
-    const IMG_FEVER_38 = "https://i.imgur.com/4X3lG8c.png";
-    const IMG_FEVER_36 = "https://i.imgur.com/pQ7wCWD.png";
-    const IMG_NORMAL   = "https://i.imgur.com/Y2uKVeM.png";
-
-    // 🚀 画像のプリロード（ブラウザに裏で覚えさせておく）
-    [IMG_NORMAL, IMG_FEVER_36, IMG_FEVER_38, IMG_FEVER_40].forEach(url => {
-      const img = new Image();
-      img.src = url;
-    });
 
     let currentUserId = "";
     let currentMemoData = { userP: "", rafauP: "", mems: "", curE: "" };
@@ -313,7 +258,7 @@
         } else {
           liff.getProfile().then(profile => {
             currentUserId = profile.userId;
-            fetchDataFast(); // ⚡ 超高速ファーストビュー読込
+            fetchDataFast();
           });
         }
       })
@@ -346,9 +291,7 @@
       }).join('');
     }
 
-    // ⚡ 【超高速化】重いシート一覧の取得を切り離し、まずステータスとメモを最速で表示する
     function fetchDataFast() {
-      // 1. まずメインのステータスとメモだけを最優先で取得
       fetch(`${GAS_URL}?userId=${currentUserId}`)
         .then(response => response.json())
         .then(data => {
@@ -374,23 +317,11 @@
           document.getElementById('editor-mems').innerText = currentMemoData.mems;
           document.getElementById('editor-curE').innerText = currentMemoData.curE;
 
-          // 🖼️ 画像は裏でこっそり切り替える
-          const imgEl = document.getElementById('rafauImg');
-          let targetImg = IMG_NORMAL;
-          if (temp > 36.5) {
-            if (temp >= 40.0) targetImg = IMG_FEVER_40;
-            else if (temp >= 38.0) targetImg = IMG_FEVER_38;
-            else targetImg = IMG_FEVER_36;
-          }
-          imgEl.src = targetImg;
-
-          // 2. 画面表示が終わったあとに、シート一覧の取得を裏でこっそり走らせる
           fetchSheetsBackground();
         })
         .catch(error => { alert("データの読み込みに失敗しました。"); });
     }
 
-    // 📂 シート一覧を裏で取得してプルダウンに反映する関数
     function fetchSheetsBackground() {
       fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`)
         .then(response => response.json())
@@ -406,7 +337,7 @@
             });
           }
         })
-        .catch(err => {}); // 万が一失敗してもメイン表示には影響させない
+        .catch(err => {});
     }
 
     function saveMemo() {
