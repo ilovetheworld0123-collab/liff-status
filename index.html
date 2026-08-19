@@ -67,7 +67,7 @@
       padding-bottom: 8px;
     }
 
-    /* 🌡️ 体温バッジエリア（画像なし・テキストのみでスッキリ） */
+    /* 🌡️ 体温表示バッジエリア */
     .avatar-card {
       text-align: center;
       margin-bottom: 15px;
@@ -102,7 +102,7 @@
     .status-item { margin: 6px 0; font-size: 15px; color: #cbd5e1; }
     .status-item span { font-weight: bold; color: #38bdf8; }
 
-    /* 📂 コントロールボックス */
+    /* 📂 コントロールボックス（ボタン方式） */
     .control-box { 
       background: rgba(30, 41, 59, 0.7); 
       padding: 15px; 
@@ -122,6 +122,12 @@
       color: #e2e8f0; 
       font-size: 14px; 
       outline: none;
+    }
+    .btn-load-sheets {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      margin-top: 5px;
+      padding: 10px;
+      font-size: 13px;
     }
 
     /* 🏷️ タブ切り替え */
@@ -202,7 +208,7 @@
   <div class="container">
     <h1>🔭 ステータス＆記憶メモ</h1>
     
-    <!-- 🌡️ 体温表示バッジのみ（画像なし） -->
+    <!-- 🌡️ 体温表示バッジのみ -->
     <div class="avatar-card">
       <div id="tempBadge" class="temp-badge normal-badge">平熱（36.5℃）</div>
     </div>
@@ -214,11 +220,13 @@
       <div class="status-item">🎭 機嫌: <span id="moodState">読込中...</span></div>
     </div>
 
+    <!-- 📂 読み込みをボタン化したコントロールエリア -->
     <div class="control-box">
-      <label for="sheetSelect">📂 <b>補完で読み込む会話シートを選択:</b></label>
+      <label for="sheetSelect">📂 <b>補完で読み込む会話シート:</b></label>
       <select id="sheetSelect">
         <option value="History">History (直近の最新)</option>
       </select>
+      <button class="btn btn-load-sheets" onclick="loadArchiveSheets()">🔄 過去のアーカイブシート一覧を読み込む</button>
     </div>
 
     <h3>📝 共有記憶（メモ）</h3>
@@ -258,7 +266,7 @@
         } else {
           liff.getProfile().then(profile => {
             currentUserId = profile.userId;
-            fetchDataFast();
+            fetchDataFast(); // 開いたときはステータスとメモだけを一瞬で取得！
           });
         }
       })
@@ -291,6 +299,7 @@
       }).join('');
     }
 
+    // 🚀 ページを開いたときはステータスとメモだけを爆速取得（アーカイブは読みに行かない！）
     function fetchDataFast() {
       fetch(`${GAS_URL}?userId=${currentUserId}`)
         .then(response => response.json())
@@ -316,16 +325,22 @@
           document.getElementById('editor-rafau').innerText = currentMemoData.rafauP;
           document.getElementById('editor-mems').innerText = currentMemoData.mems;
           document.getElementById('editor-curE').innerText = currentMemoData.curE;
-
-          fetchSheetsBackground();
         })
         .catch(error => { alert("データの読み込みに失敗しました。"); });
     }
 
-    function fetchSheetsBackground() {
+    // 🔄 ボタンを押した「その瞬間だけ」アーカイブ一覧をサーバーに問い合わせてプルダウンに反映する
+    function loadArchiveSheets() {
+      const loadBtn = document.querySelector('.btn-load-sheets');
+      loadBtn.innerText = "読込中... ⏳";
+      loadBtn.disabled = true;
+
       fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`)
         .then(response => response.json())
         .then(data => {
+          loadBtn.innerText = "🔄 過去のアーカイブシート一覧を読み込む";
+          loadBtn.disabled = false;
+
           if(data.sheets && data.sheets.length > 0) {
             const select = document.getElementById('sheetSelect');
             select.innerHTML = "";
@@ -335,9 +350,16 @@
               opt.innerText = sheetName === 'History' ? 'History (直近の最新)' : sheetName + ' (過去のアーカイブ)';
               select.appendChild(opt);
             });
+            alert("📂 アーカイブシートの読み込みが完了しました！プルダウンから選択できます。");
+          } else {
+            alert("読込可能なシートは History のみです。");
           }
         })
-        .catch(err => {});
+        .catch(err => {
+          loadBtn.innerText = "🔄 過去のアーカイブシート一覧を読み込む";
+          loadBtn.disabled = false;
+          alert("アーカイブ一覧の取得に失敗しました。");
+        });
     }
 
     function saveMemo() {
