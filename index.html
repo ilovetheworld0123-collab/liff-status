@@ -291,11 +291,17 @@
     const LIFF_ID = "2011085090-Y3VoNpnw"; 
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwMFWZJ7i-6B45cY-WYdW_4FNbF_p1I7kbH5Cr5eulA5IcOJkVZv1AN4FsrrjGtoj7g/exec";
     
-    // 🖼️ 指定いただいたImgurの体温別立ち絵URL
-    const IMG_FEVER_40 = "https://i.imgur.com/CNPGgyT.png"; // 40.0℃〜（重症）
-    const IMG_FEVER_38 = "https://i.imgur.com/4X3lG8c.png"; // 38.0℃〜39.9℃（高熱）
-    const IMG_FEVER_36 = "https://i.imgur.com/pQ7wCWD.png"; // 36.6℃〜37.9℃（微熱）
-    const IMG_NORMAL   = "https://i.imgur.com/Y2uKVeM.png"; // 36.5℃（平熱）
+    // 🖼️ 立ち絵URL
+    const IMG_FEVER_40 = "https://i.imgur.com/CNPGgyT.png";
+    const IMG_FEVER_38 = "https://i.imgur.com/4X3lG8c.png";
+    const IMG_FEVER_36 = "https://i.imgur.com/pQ7wCWD.png";
+    const IMG_NORMAL   = "https://i.imgur.com/Y2uKVeM.png";
+
+    // 🚀 画像のプリロード（ブラウザに裏で覚えさせておく）
+    [IMG_NORMAL, IMG_FEVER_36, IMG_FEVER_38, IMG_FEVER_40].forEach(url => {
+      const img = new Image();
+      img.src = url;
+    });
 
     let currentUserId = "";
     let currentMemoData = { userP: "", rafauP: "", mems: "", curE: "" };
@@ -307,7 +313,7 @@
         } else {
           liff.getProfile().then(profile => {
             currentUserId = profile.userId;
-            fetchData();
+            fetchDataFast(); // ⚡ 超高速ファーストビュー読込
           });
         }
       })
@@ -340,12 +346,55 @@
       }).join('');
     }
 
-    function fetchData() {
-      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`) 
+    // ⚡ 【超高速化】重いシート一覧の取得を切り離し、まずステータスとメモを最速で表示する
+    function fetchDataFast() {
+      // 1. まずメインのステータスとメモだけを最優先で取得
+      fetch(`${GAS_URL}?userId=${currentUserId}`)
         .then(response => response.json())
         .then(data => {
-          if(data.error) throw new Error(data.error);
+          document.getElementById('userName').innerText = data.name || "名無し";
+          document.getElementById('trustScore').innerText = data.trust;
+          document.getElementById('stageName').innerText = data.stage;
+          document.getElementById('moodState').innerText = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
           
+          const temp = data.feverTemp || 36.5;
+          const badgeEl = document.getElementById('tempBadge');
+
+          if (temp > 36.5) {
+            badgeEl.innerText = `風邪（${temp.toFixed(1)}℃）`;
+            badgeEl.className = "temp-badge";
+          } else {
+            badgeEl.innerText = "平熱（36.5℃）";
+            badgeEl.className = "temp-badge normal-badge";
+          }
+
+          currentMemoData = parseMemoClient(data.memo);
+          document.getElementById('editor-user').innerText = currentMemoData.userP;
+          document.getElementById('editor-rafau').innerText = currentMemoData.rafauP;
+          document.getElementById('editor-mems').innerText = currentMemoData.mems;
+          document.getElementById('editor-curE').innerText = currentMemoData.curE;
+
+          // 🖼️ 画像は裏でこっそり切り替える
+          const imgEl = document.getElementById('rafauImg');
+          let targetImg = IMG_NORMAL;
+          if (temp > 36.5) {
+            if (temp >= 40.0) targetImg = IMG_FEVER_40;
+            else if (temp >= 38.0) targetImg = IMG_FEVER_38;
+            else targetImg = IMG_FEVER_36;
+          }
+          imgEl.src = targetImg;
+
+          // 2. 画面表示が終わったあとに、シート一覧の取得を裏でこっそり走らせる
+          fetchSheetsBackground();
+        })
+        .catch(error => { alert("データの読み込みに失敗しました。"); });
+    }
+
+    // 📂 シート一覧を裏で取得してプルダウンに反映する関数
+    function fetchSheetsBackground() {
+      fetch(`${GAS_URL}?userId=${currentUserId}&action=getAvatarData`)
+        .then(response => response.json())
+        .then(data => {
           if(data.sheets && data.sheets.length > 0) {
             const select = document.getElementById('sheetSelect');
             select.innerHTML = "";
@@ -356,40 +405,8 @@
               select.appendChild(opt);
             });
           }
-
-          return fetch(`${GAS_URL}?userId=${currentUserId}`);
         })
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById('userName').innerText = data.name || "名無し";
-          document.getElementById('trustScore').innerText = data.trust;
-          document.getElementById('stageName').innerText = data.stage;
-          document.getElementById('moodState').innerText = data.isGrumpy ? "😡 不機嫌" : "😊 通常";
-          
-          const temp = data.feverTemp || 36.5;
-          const imgEl = document.getElementById('rafauImg');
-          const badgeEl = document.getElementById('tempBadge');
-
-          if (temp > 36.5) {
-            badgeEl.innerText = `風邪（${temp.toFixed(1)}℃）`;
-            badgeEl.className = "temp-badge";
-
-            if (temp >= 40.0) imgEl.src = IMG_FEVER_40;
-            else if (temp >= 38.0) imgEl.src = IMG_FEVER_38;
-            else imgEl.src = IMG_FEVER_36;
-          } else {
-            badgeEl.innerText = "平熱（36.5℃）";
-            badgeEl.className = "temp-badge normal-badge";
-            imgEl.src = IMG_NORMAL;
-          }
-
-          currentMemoData = parseMemoClient(data.memo);
-          document.getElementById('editor-user').innerText = currentMemoData.userP;
-          document.getElementById('editor-rafau').innerText = currentMemoData.rafauP;
-          document.getElementById('editor-mems').innerText = currentMemoData.mems;
-          document.getElementById('editor-curE').innerText = currentMemoData.curE;
-        })
-        .catch(error => { alert("データの読み込みに失敗しました。"); });
+        .catch(err => {}); // 万が一失敗してもメイン表示には影響させない
     }
 
     function saveMemo() {
@@ -405,9 +422,7 @@
 
       fetch(GAS_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           userId: currentUserId,
           action: 'updateMemo',
