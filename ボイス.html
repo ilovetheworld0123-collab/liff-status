@@ -137,12 +137,17 @@
         function togglePlay() {
             if (!audioUrl) return;
 
+            // タップされた瞬間に即座にオーディオをロード・再生を試みる
             if (audioPlayer.paused) {
+                audioPlayer.src = audioUrl; // 再生時に明示的にセット
+                audioPlayer.load();
+                
                 audioPlayer.play().then(() => {
                     playBtn.innerText = "⏸";
                     statusText.innerText = "再生中...";
                 }).catch(e => {
-                    statusText.innerText = "再生失敗";
+                    console.error("再生エラー:", e);
+                    statusText.innerText = "再生失敗 (制限ブロックの可能性)";
                 });
             } else {
                 audioPlayer.pause();
